@@ -1,0 +1,33 @@
+PREFIX=/usr/local/
+
+GCC=gcc
+CFLAGS=-O2 -Wall -I./include -I$(PREFIX)/include/tcl8.4 -DOPENBSD -msse -mfpmath=sse -fpic
+LFLAGS=-shared -lm 
+
+INSTALL_PATH=$(PREFIX)/lib
+
+all: clean tcl lib
+
+tcl:
+	swig -tcl8 -o src/esweep_wrap.c "include/esweep.i"
+
+lib:	
+	$(GCC) $(LFLAGS) $(CFLAGS) -o esweep.so src/esweep_wrap.c \
+						src/esweep.c \
+						src/fft.c \
+						src/dsp.c \
+						src/esweep_conv.c \
+						src/esweep_math.c \
+						src/esweep_mem.c \
+						src/esweep_generate.c \
+						src/esweep_file.c \
+						src/esweep_sound.c \
+						src/sound_openbsd.c \
+						src/esweep_dsp.c \
+						src/esweep_surface.c
+	
+install:
+	cp esweep.so $(INSTALL_PATH)/esweep.so
+
+clean:
+	rm -f esweep.so src/esweep_wrap.c
