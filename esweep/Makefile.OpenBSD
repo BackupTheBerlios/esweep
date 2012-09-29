@@ -1,0 +1,44 @@
+TCL_BASE=/usr/local
+
+AR=ar
+CC=gcc
+CFLAGS=-Wall -I$(TCL_BASE)/include/tcl8.5 -DHAVE_UNISTD_H -msse -mfpmath=sse -DNDEBUG_PRINT -DOPENBSD -I./src/portaudio/include -DESWEEP_ERROR_NOEXIT -fpic
+LFLAGS=-L/usr/local/lib -L./
+
+# The code breaks on windows with -O2, but -O3 works...
+OPTS=-O2
+
+LIBS_BASE=-lm
+LIBS_WRAP_TCL=-ltcl85 -lm -lesweep
+
+TCL_WRAP=src/wrapper/tcl
+
+CSRC_BASE  =  src/esweep_priv.c src/dsp.c src/esweep_base.c src/esweep_conv.c src/esweep_dsp.c src/esweep_file.c src/esweep_filter.c src/esweep_generate.c src/esweep_math.c src/esweep_mem.c src/audio_file.c src/esweep_audio.c src/audio_pa.c src/audio_openbsd.c src/fft.c 
+CSRC_WRAP_TCL = $(TCL_WRAP)/esweep_tcl_wrap.c $(TCL_WRAP)/esweep_tcl_wrap_base.c $(TCL_WRAP)/esweep_tcl_wrap_conv.c $(TCL_WRAP)/esweep_tcl_wrap_disp.c $(TCL_WRAP)/esweep_tcl_wrap_dsp.c $(TCL_WRAP)/esweep_tcl_wrap_file.c $(TCL_WRAP)/esweep_tcl_wrap_gen.c $(TCL_WRAP)/esweep_tcl_wrap_math.c $(TCL_WRAP)/esweep_tcl_wrap_mem.c $(TCL_WRAP)/esweep_tcl_wrap_filter.c $(TCL_WRAP)/esweep_tcl_wrap_audio.c 
+
+OBJS_BASE = $(CSRC_BASE:.c=.o)
+OBJS_WRAP_TCL = $(CSRC_WRAP_TCL:.c=.o)
+
+OUT = libesweep.a
+OUT_TCL = libesweeptcl.so
+
+lib: $(OUT)
+
+tcl: $(OUT_TCL)
+
+$(OUT): $(OBJS_BASE)
+	$(AR) rcs $@ $(OBJS_BASE)
+
+$(OBJS_BASE): $(CSRC_BASE)
+	$(CC) $(CFLAGS) $(OPTS) -o $@ -c $<
+
+$(OUT_TCL): $(OUT) $(OBJS_WRAP_TCL)
+	$(CC) -shared -o $@ $(OBJS_WRAP_TCL) $(LFLAGS) $(LIBS_WRAP_TCL)
+
+$(OBJS_WRAP_TCL): $(CSRC_WRAP_TCL)
+	$(CC) $(CFLAGS) $(OPTS) -o $@ -c $<
+
+clean:
+	rm -f $(OBJS_BASE) $(OUT) $(OBJS_WRAP_TCL) $(OUT_TCL)
+
+.PHONY: clean
