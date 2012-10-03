@@ -1044,6 +1044,7 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale "all"}} {
 					set df [expr {1.0*[esweep::samplerate -obj $obj]/[esweep::size -obj $obj]}]
 					set from [expr {int(0.5+$plots($plotName,Config,X,Min)/$df)}]
 					set to [expr {int(0.5+$plots($plotName,Config,X,Max)/$df)}]
+
 					# if Xmax > size use the whole range
 					set to [expr {$to >= [esweep::size -obj $obj] ? -1 : $to}]
 					if {$max == {inf}} {

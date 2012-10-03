@@ -3,7 +3,7 @@ package require Tk 8.5
 package require Ttk 8.5
 
 #load ../../esweep.dll; # replace this line by something like package require ...
-load ../esweep.so; # replace this line by something like package require ...
+load ../../../libesweeptcl.so esweep; # replace this line by something like package require ...
 source ../TkEsweepXYPlot/TkEsweepXYPlot.tcl
 
 # This program measures the impulse response of a system. 
@@ -72,7 +72,7 @@ namespace eval impulse {
 		# {Range of FR display}
 		Processing,FR,Range 50
 		# {Show which distortions?}
-		Processing,Distortions {2 3 5}
+		Processing,Distortions {5}
 		# {Down to which level (wrt max of graph)?}
 		Processing,Distortions,Range 100
 
@@ -89,7 +89,8 @@ namespace eval impulse {
 		# {Hold an event ID to make live update smooth}
 		Intern,LiveRefresh {}
 		# {Last generated sweep rate}
-		Inter,SweepRate {}
+		Intern,SweepRate {}
+		Intern,Unsaved 0
 	}
 	# delete comments from array
 	array unset config {#}
@@ -507,7 +508,7 @@ proc __calcFr {{mic {}}} {
 	return 0
 }
 
-proc __calcDistortions {ir start length sc} {
+proc __calcDistortions {ir gate_start length sc} {
 	if {[impulse cget Intern,SweepRate] eq {} || 
 		[impulse cget Intern,SweepRate] <= 0} return
 	
@@ -521,12 +522,20 @@ proc __calcDistortions {ir start length sc} {
 		if {$k < 2} continue
 		# find the position of the k'th distortion IR
 		# $start is already in samples
-		set start [expr {$start-int(log($k)*[impulse cget Intern,SweepRate]*[impulse cget Audio,Samplerate])}]
-		set stop [expr {$start+$length}]
-		if {$stop >= [esweep::size $ir]} {set stop [expr {[esweep::size]-1}]} 
+		set start [expr {$gate_start-int(0.5+log($k)*[impulse cget Intern,SweepRate]*[impulse cget Audio,Samplerate])}]
+		set start [expr {$start < 0 ? [esweep::size -obj $ir] + $start : $start}]
 
+		set stop [expr {$start+$length}]
+		# cut out harmonic impulse response
+		# wrap around at end of total IR
+		if {$stop >= [esweep::size -obj $ir]} {
+			set fr [esweep::create -type [esweep::type -obj $ir] -size $length -samplerate [impulse cget Audio,Samplerate]]
+			set l [esweep::copy -src $ir -dst $fr -srcIdx $start]
+			esweep::copy -src $ir -dst $fr -srcIdx 0 -dstIdx $l
+		} else {	
+			set fr [esweep::get -obj $ir -from $start -to $stop]
+		}
 		# calculate distortion response
-		set fr [esweep::get -obj $ir -from $start -to $stop]
 		esweep::toWave -obj fr
 		esweep::fft -obj fr -inplace
 		esweep::toPolar -obj fr
@@ -540,9 +549,10 @@ proc __calcDistortions {ir start length sc} {
 
 		# display
 		if {[::TkEsweepXYPlot::exists FR $k]} {
-			::TkEsweepXYPlot::configTrace FR $k -trace [esweep::clone -obj $fr] -color colors($k)
+			::TkEsweepXYPlot::configTrace FR $k -trace [esweep::clone -src $fr] -color $colors($k)
 		} else {
-			::TkEsweepXYPlot::addTrace FR $k FR [esweep::clone -obj $fr]
+			::TkEsweepXYPlot::addTrace FR $k "HD$k" [esweep::clone -src $fr]
+			::TkEsweepXYPlot::configTrace FR $k -color $colors($k)
 		}
 	}
 

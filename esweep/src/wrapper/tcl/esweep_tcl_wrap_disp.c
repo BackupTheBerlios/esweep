@@ -230,7 +230,7 @@ static void inline polarLogLin(const esweep_object *obj, Tcl_Obj *listPtr, const
 	y=0; // avoid compiler warning
 	// get the drawable indices
 	i0=(int) (world[0]/df); i0=i0 < 1 ? 1 : i0; // do not round up
-	i1=(int) (world[2]/df+0.5); i0=i0 >= obj->size ? obj->size-1 : i0; 
+	i1=(int) (world[2]/df+0.5); i1=i1 >= obj->size ? obj->size-1 : i1; 
 	switch (option) {
 		case ABS_COORDS: 
 			for (i=i0; i < i1; i++) {

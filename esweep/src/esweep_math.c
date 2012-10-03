@@ -71,7 +71,7 @@ int esweep_max(const esweep_object *obj, int from, int to, Real *max) { /* UNTES
 			break;
 		case POLAR:
 			polar=(Polar*) obj->data;
-			for (i=from+1, *max=polar[from].abs; i <= to; i++)
+			for (i=from+1, *max=polar[from].abs; i <= to; i++) 
 				if (polar[i].abs>*max) *max=polar[i].abs;
 			break;
 		case SURFACE:
