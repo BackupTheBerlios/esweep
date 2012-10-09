@@ -1021,7 +1021,7 @@ proc ::TkEsweepXYPlot::drawReadout {plotName} {
 
 }
 
-proc ::TkEsweepXYPlot::autoscale {plotName {scale "all"}} {
+proc ::TkEsweepXYPlot::autoscale {plotName {scale {all}}} {
 	variable plots
 
 	if {[info exists plots($plotName,Traces)]==0} {
@@ -1029,22 +1029,22 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale "all"}} {
 		return
 	}
 
-	if {$scale=="all"} {set sc "x y1 y2"} else {set sc $scale}
+	if {$scale=={all}} {set sc {x y1 y2}} else {set sc $scale}
 
 	foreach s [split [string toupper $sc]] {
-		if {$plots($plotName,Config,$s,Autoscale)=="off"} {continue}
-		if {$plots($plotName,Config,$s,State)=="off"} {continue}
+		if {$plots($plotName,Config,$s,Autoscale)=={off}} {continue}
+		if {$plots($plotName,Config,$s,State)=={off}} {continue}
 		set plots($plotName,Config,Dirty) 1
 		set max inf
 		set min -inf
 		switch $s {
+			Y2 -
 			Y1 {
 				foreach {traceID} $plots($plotName,Traces) {
 					set obj $plots($plotName,Traces,$traceID,Obj)
 					set df [expr {1.0*[esweep::samplerate -obj $obj]/[esweep::size -obj $obj]}]
 					set from [expr {int(0.5+$plots($plotName,Config,X,Min)/$df)}]
 					set to [expr {int(0.5+$plots($plotName,Config,X,Max)/$df)}]
-
 					# if Xmax > size use the whole range
 					set to [expr {$to >= [esweep::size -obj $obj] ? -1 : $to}]
 					if {$max == {inf}} {
@@ -1061,6 +1061,19 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale "all"}} {
 					}
 				}
 			}
+			X {
+				foreach {traceID} $plots($plotName,Traces) {
+					set obj $plots($plotName,Traces,$traceID,Obj)
+					set min 0
+					if {$max == {inf}} {
+						set max [expr {1000.0*[esweep::size -obj $obj]/[esweep::samplerate -obj $obj]}]
+					} else {
+						set m [expr {1000.0*[esweep::size -obj $obj]/[esweep::samplerate -obj $obj]}]
+						if {$m > $max} {set max $m}
+					}
+				}
+			}
+
 			default {}
 		}
 		if {$max eq {inf}} {
@@ -1093,15 +1106,19 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale "all"}} {
 			if {abs($max) < 1e-9} {
 				set max 0
 			} else {
-				set decade [expr {pow(10, floor(log10(abs($max))))}]
-				set max [expr {ceil($max/$decade)*$decade}]
+				if {$s ne {X}} {
+					set decade [expr {pow(10, floor(log10(abs($max))))}]
+					set max [expr {ceil($max/$decade)*$decade}]
+				}
 			}
 
 			if {abs($min) < 1e-9} {
 				set min 0
 			} else {
-				set decade [expr {pow(10, floor(log10(abs($min))))}]
-				set min [expr {floor($min/$decade)*$decade}]
+				if {$s ne {X}} {
+					set decade [expr {pow(10, floor(log10(abs($min))))}]
+					set min [expr {floor($min/$decade)*$decade}]
+				}
 			}
 		}
 
