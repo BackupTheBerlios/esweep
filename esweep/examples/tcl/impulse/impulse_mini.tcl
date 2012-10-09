@@ -15,7 +15,7 @@ namespace eval impulse {
 	variable config
 	array set config {
 		# {Audio device}
-		Audio,Device {audio:/dev/audio1}
+		Audio,Device {audio:/dev/audio0}
 		# {Samplerate}
 		Audio,Samplerate 48000
 		# {bitrate}
@@ -74,7 +74,7 @@ namespace eval impulse {
 		# {Show which distortions?}
 		Processing,Distortions {5}
 		# {Down to which level (wrt max of graph)?}
-		Processing,Distortions,Range 100
+		Processing,Distortions,Range 60
 
 		# {Internal part}
 		
@@ -406,10 +406,26 @@ proc measure {} {
 	set in_system [lindex $in [expr {$in_channel-1}]]
 	set in_ref [lindex $in [expr {$ref_channel-1}]]
 
+	esweep::toAscii -filename ref.txt -obj $in_ref
+	esweep::toAscii -filename rec.txt -obj $in_system
+
 	# calculate the IR
 	esweep::deconvolve -signal in_system  -filter $in_ref
 	esweep::toWave -obj in_system
 
+	# microphone distance correction
+	if {[set dist [impulse cget Mic,$mic,Distance]] == {}} {
+		# no distance stored, use the default
+		set dist [impulse cget Mic,Global,Distance]
+	}
+	if {$dist < 0} {
+		# automatic gate adjustement, 1 ms pre delay
+		set gate_start [expr {int(1000*double([esweep::maxPos -obj $in_system])/$samplerate)-1}]
+	} else {
+		set gate_start [expr {int(1000*$dist/343.0)}]
+	}
+	set ::TkEsweepXYPlot::plots(IR,Config,X,Min) $gate_start
+	set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [expr {$gate_start+[::impulse cget Processing,Gate]}]
 	if {[::TkEsweepXYPlot::exists IR 0]} {
 		::TkEsweepXYPlot::configTrace IR 0 -trace [esweep::clone -src $in_system]
 	} else {
@@ -455,6 +471,7 @@ proc __calcFr {{mic {}}} {
 	} else {
 		set gate_start [expr {int(0.5+$dist/343.0*$samplerate)}]
 	}
+	set gate_start [expr {$gate_start < 0 ? [esweep::size -obj $ir] + $gate_start : $gate_start}]
 	set gate_stop [expr {int(0.5+$gate_start+[::TkEsweepXYPlot::getCursor IR 2]/1000.0*$samplerate)}]
 	set gate_length [expr {$gate_stop - $gate_start+1}]
 	set fft_length [impulse cget Processing,FFT,Size]
@@ -481,7 +498,13 @@ proc __calcFr {{mic {}}} {
 	}
 
 	# cut out the IR
-	set fr [esweep::get -obj $ir -from $gate_start -to $gate_stop]
+	if {$gate_stop >= [esweep::size -obj $ir]} {
+		set fr [esweep::create -type [esweep::type -obj $ir] -size $gate_length -samplerate $samplerate]
+		set l [esweep::copy -src $ir -dst fr -srcIdx $gate_start]
+		esweep::copy -src $ir -dst fr -srcIdx 0 -dstIdx $l
+	} else {	
+		set fr [esweep::get -obj $ir -from $gate_start -to $gate_stop]
+	}
 	esweep::toWave -obj fr
 	esweep::fft -obj fr -inplace
 	esweep::toPolar -obj fr
@@ -514,7 +537,7 @@ proc __calcDistortions {ir gate_start length sc} {
 	
 	array set colors {
 		2	darkblue
-		3	darkgree
+		3	darkgreen
 		4	yellow
 		5	brown
 	}
@@ -530,8 +553,8 @@ proc __calcDistortions {ir gate_start length sc} {
 		# wrap around at end of total IR
 		if {$stop >= [esweep::size -obj $ir]} {
 			set fr [esweep::create -type [esweep::type -obj $ir] -size $length -samplerate [impulse cget Audio,Samplerate]]
-			set l [esweep::copy -src $ir -dst $fr -srcIdx $start]
-			esweep::copy -src $ir -dst $fr -srcIdx 0 -dstIdx $l
+			set l [esweep::copy -src $ir -dst fr -srcIdx $start]
+			esweep::copy -src $ir -dst fr -srcIdx 0 -dstIdx $l
 		} else {	
 			set fr [esweep::get -obj $ir -from $start -to $stop]
 		}
