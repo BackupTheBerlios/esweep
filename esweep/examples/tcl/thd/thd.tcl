@@ -140,7 +140,7 @@ proc measure {} {
 			set re [esweep::sum -obj $re]
 			set im [esweep::sum -obj $im]
 
-			lappend HD [expr {20*log10($config(Audio,Input,Cal)*sqrt($re**2+$im**2))}]
+			lappend HD [expr {20*log10($config(Audio,Input,Cal)*sqrt($re**2+$im**2)/$fftsize)}]
 		}
 		lappend result $HD
 
