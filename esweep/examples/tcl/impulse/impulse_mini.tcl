@@ -21,7 +21,7 @@ namespace eval impulse {
 		# {bitrate}
 		Audio,Bitdepth 16
 		# {Microphone sensitivity in V/Pa}
-		Mic,Global,Sensitivity 0.1
+		Mic,Global,Sensitivity 0.29
 		# {Microphone frequency response compensation file \
 		   If empty, no compensation is done}
 		Mic,Global,Compensation ""
@@ -38,7 +38,7 @@ namespace eval impulse {
 		# {Maximum output level in 1/FS. If < 1 avoids oversteering}
 		Output,MaxFSLevel 0.9 
 		# {Calibration level for the output in V/FS (RMS!)}
-		Output,Global,Cal	2.0 
+		Output,Global,Cal	1.0 
 		# {Signal type}
 		Signal,Type logsweep
 		# {Signal duration in ms}
@@ -56,7 +56,7 @@ namespace eval impulse {
 		# {gain of external amplifier}
 		Input,Global,Gain 1.0
 		# {Calibration level for the input in V/FS (RMS!)}
-		Input,Global,Cal 2.0
+		Input,Global,Cal 1.0
 		# {Length of gate in ms}
 		Processing,Gate 100
 		# {Length of FFT in samples}
@@ -72,9 +72,9 @@ namespace eval impulse {
 		# {Range of FR display}
 		Processing,FR,Range 50
 		# {Show which distortions?}
-		Processing,Distortions {5}
+		Processing,Distortions {2 3 5}
 		# {Down to which level (wrt max of graph)?}
-		Processing,Distortions,Range 60
+		Processing,Distortions,Range 80
 
 		# {Internal part}
 		
@@ -406,9 +406,6 @@ proc measure {} {
 	set in_system [lindex $in [expr {$in_channel-1}]]
 	set in_ref [lindex $in [expr {$ref_channel-1}]]
 
-	esweep::toAscii -filename ref.txt -obj $in_ref
-	esweep::toAscii -filename rec.txt -obj $in_system
-
 	# calculate the IR
 	esweep::deconvolve -signal in_system  -filter $in_ref
 	esweep::toWave -obj in_system
@@ -486,6 +483,7 @@ proc __calcFr {{mic {}}} {
 	}
 
 	# the scaling factor
+	set sc [expr {$in_sense/($ref_sense*$mic_sense*2e-5)}]
 	set sc [expr {$in_sense/($ref_sense*$mic_sense)}]
 	if {[impulse cget Processing,Scaling] eq {Absolute}} {
 		set sc [expr {$sc*[impulse cget	Processing,Scaling,Reference]}]
@@ -498,6 +496,7 @@ proc __calcFr {{mic {}}} {
 	}
 
 	# cut out the IR
+	esweep::expr ir * $sc
 	if {$gate_stop >= [esweep::size -obj $ir]} {
 		set fr [esweep::create -type [esweep::type -obj $ir] -size $gate_length -samplerate $samplerate]
 		set l [esweep::copy -src $ir -dst fr -srcIdx $gate_start]
@@ -508,7 +507,6 @@ proc __calcFr {{mic {}}} {
 	esweep::toWave -obj fr
 	esweep::fft -obj fr -inplace
 	esweep::toPolar -obj fr
-	esweep::expr fr * $sc
 	esweep::lg -obj fr
 	esweep::expr fr * 20
 	if {[impulse cget Processing,Smoothing] > 0} {esweep::smooth -obj fr -factor [impulse cget Processing,Smoothing]}
@@ -562,7 +560,6 @@ proc __calcDistortions {ir gate_start length sc} {
 		esweep::toWave -obj fr
 		esweep::fft -obj fr -inplace
 		esweep::toPolar -obj fr
-		esweep::expr fr * $sc
 		esweep::lg -obj fr
 		esweep::expr fr * 20
 		if {[impulse cget Processing,Smoothing] > 0} {esweep::smooth -obj fr -factor [impulse cget Processing,Smoothing]}

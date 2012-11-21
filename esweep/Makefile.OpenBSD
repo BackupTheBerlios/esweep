@@ -2,14 +2,14 @@ TCL_BASE=/usr/local
 
 AR=ar
 CC=gcc
-CFLAGS=-Wall -I$(TCL_BASE)/include/tcl8.5 -DHAVE_UNISTD_H -msse -mfpmath=sse -DNDEBUG_PRINT -DOPENBSD -I./src/portaudio/include -DESWEEP_ERROR_NOEXIT -fpic
+CFLAGS=-Wall -I/usr/local/include -I$(TCL_BASE)/include/tcl8.5 -DHAVE_UNISTD_H -msse -mfpmath=sse -DNDEBUG_PRINT -DOPENBSD -I./src/portaudio/include -DESWEEP_ERROR_NOEXIT -fpic
 LFLAGS=-L/usr/local/lib -L./
 
 # The code breaks on windows with -O2, but -O3 works...
 OPTS=-O2
 
-LIBS_BASE=-lm
-LIBS_WRAP_TCL=-ltcl85 -lm -lesweep
+LIBS_BASE=-lm -lportaudio -lpthread
+LIBS_WRAP_TCL=-ltcl85 -lm -lesweep -lportaudio -lpthread
 
 TCL_WRAP=src/wrapper/tcl
 

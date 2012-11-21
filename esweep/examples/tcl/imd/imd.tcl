@@ -1,4 +1,4 @@
-load ../esweep.so; # replace this line by something like package require ...
+load ../../../libesweeptcl.so esweep; # replace this line by something like package require ...
 #load ./esweep.dll; # replace this line by something like package require ...
 
 # set defaults
@@ -571,12 +571,13 @@ proc multitone {} {
 	set in2 [esweep::create -type wave -samplerate $samplerate -size $fftsize]
 
 	# open audio device and check if the configuration works
-	if {[catch {set au [openAudioDevice audio:0 $samplerate $framesize]}]} {
+	if {[catch {set au [openAudioDevice audio:/dev/audio1 $samplerate $framesize]}]} {
 		puts stderr {Error: needed framesize not supported by soundcard, adjust -f1.}
 		exit
 	}
 
 	# record signal
+	esweep::audioSync -handle $au
 	esweep::audioSync -handle $au
 	record $au [list $out $out] [list $in1 $in2] $fftsize 
 

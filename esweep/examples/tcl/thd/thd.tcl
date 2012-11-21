@@ -1,16 +1,17 @@
 load ../../../libesweeptcl.so esweep
 
 array set config {
-	Audio,Device 		audio:/dev/audio
-	Audio,Samplerate 	48000
+	Audio,Device 		audio:/dev/audio1
+	Audio,Samplerate 	44100
 	Audio,Output,Channel 	1
 	Audio,Output,Max	0.9
 	Audio,Input,Channel 	1
-	Audio,Input,Cal		1
+	Audio,Input,Cal		0.29
+	Audio,Input,Cal,Base	2e-5
 
-	Measurement,F1		200
-	Measurement,F2		20e3
-	Measurement,Step	2
+	Measurement,F1		700
+	Measurement,F2		3000
+	Measurement,Step	3
 	Measurement,Harmonics	{2 3 5}
 }
 
@@ -29,40 +30,52 @@ proc openAudioDevice {device samplerate framesize} {
 		return -code error
 	}
 
-
 	return $au
 }
 
 proc record {au sig_out sig_in sigsize} {
-       	# let the audio subsystem settle itself
-	# on usual platforms 10 frames are enough
-	set frames 10
+	set maxFrames 20
 	set framesize [esweep::audioQuery -handle $au -param framesize]
 	set samplerate [esweep::audioQuery -handle $au -param samplerate]
-	set delay [expr {int(0.5+1000*$framesize/$samplerate)/2}]
-
+	set delay [expr {int(0.5+1000*$framesize/$samplerate)/4}]
 	set offset 0
 	set old_offset 0
-	while {$frames > 0} {
+
+	# fill input and output buffers
+	set frames 0
+	esweep::audioSync -handle $au
+	while {$frames < $maxFrames} {
 		esweep::audioIn -handle $au -signals $sig_in -offset $old_offset
 		set offset [esweep::audioOut -handle $au -signals $sig_out -offset $old_offset]
-		if {$offset > $old_offset} {incr frames -1}
+		if {$offset > $old_offset} {
+			incr frames
+		}
 		# allow wrap around
 		if {$offset >= $sigsize} {set offset 0}
 		set old_offset $offset
 		after $delay
 	}
+
 	# now do the actual recording
 	set frames [expr {$sigsize/$framesize}]
 	while {$frames > 0} {
 		esweep::audioIn -handle $au -signals $sig_in -offset $old_offset
 		set offset [esweep::audioOut -handle $au -signals $sig_out -offset $old_offset]
-		if {$offset > $old_offset} {incr frames -1}
+		if {$offset > $old_offset} {
+			incr frames -1
+		}
 		# allow wrap around
 		if {$offset >= $sigsize} {set offset 0}
 		set old_offset $offset
 		after $delay
 	}
+	# make sure that we stop playback at the end of the output signal
+	if {$offset != 0} {
+		while {$offset < $sigsize} {
+			set offset [esweep::audioOut -handle $au -signals $sig_out -offset $offset]
+		}
+	}
+	esweep::audioSync -handle $au
 	return
 }
 
@@ -92,6 +105,7 @@ proc measure {} {
 
 	set f $config(Measurement,F1)
 	for {set i 0} {$i < $n} {incr i} {
+		esweep::audioSync -handle $au
 		# calculate the FFT size that the deviation from the desired frequency is below 1%
 		set dev [expr {0.01*$f}]
 		set fftsize [expr {int(0.5+pow(2, ceil(log(1.0*$samplerate/$dev)/log(2))))}]
@@ -117,7 +131,6 @@ proc measure {} {
 		set in2 [esweep::create -type wave -samplerate $config(Audio,Samplerate) -size $fftsize]
 
 		# record signal
-		esweep::audioSync -handle $au
 		record $au [list $out $out] [list $in1 $in2] $fftsize
 
 		if {$config(Audio,Input,Channel) == 1} {
@@ -127,10 +140,10 @@ proc measure {} {
 		}
 
 		# do DFT for each harmonic
-		
 		lappend result $f
 		set HD [list]
 		foreach k [concat 1 $config(Measurement,Harmonics)] {
+			if {$k*$f >= $config(Audio,Samplerate)/2} continue
 			set re [esweep::clone -src $dut]
 			set im [esweep::clone -src $dut]
 
@@ -140,14 +153,13 @@ proc measure {} {
 			set re [esweep::sum -obj $re]
 			set im [esweep::sum -obj $im]
 
-			lappend HD [expr {20*log10($config(Audio,Input,Cal)*sqrt($re**2+$im**2)/$fftsize)}]
+			lappend HD [expr {20*log10(2*sqrt($re**2+$im**2)/($config(Audio,Input,Cal)*$config(Audio,Input,Cal,Base)*$fftsize))}]
 		}
 		lappend result $HD
 
 		set f [expr $f $step]
 	}
 	# close audio device
-	esweep::audioSync -handle $au
 	esweep::audioClose -handle $au
 
 	return $result

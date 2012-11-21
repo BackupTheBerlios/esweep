@@ -369,7 +369,6 @@ int audio_device_pause(esweep_audio *handle) {
 		return -1;
 	}
 
-	ioctl(handle->au_hdl, AUDIO_DRAIN, NULL);
 	info.play.pause=1;
 	info.record.pause=1;
 	if (ioctl(handle->au_hdl, AUDIO_SETINFO, &info)<0) {
@@ -518,8 +517,8 @@ int audio_device_in(esweep_audio *handle, esweep_object *in[], u_int channels, i
 }
 
 void audio_device_close(esweep_audio *handle) {
-	ioctl(handle->au_hdl, AUDIO_DRAIN, NULL);
-	ioctl(handle->au_hdl, AUDIO_FLUSH, NULL);
+	//ioctl(handle->au_hdl, AUDIO_DRAIN, NULL);
+	//ioctl(handle->au_hdl, AUDIO_FLUSH, NULL);
 	close(handle->au_hdl);
 	free(handle->dither); 
 	free(handle->obuf); 

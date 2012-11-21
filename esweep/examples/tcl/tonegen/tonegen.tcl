@@ -1,11 +1,7 @@
-package provide app-tonegen 1.0
-
 #!/usr/local/bin/tclsh8.5
-#package require Tk 8.5
-#package require Ttk 8.5
 
-load [file join [pwd] libesweep.dll] esweep; # replace this line by something like package require ...
-#load ../esweep.so; # replace this line by something like package require ...
+#load [file join [pwd] libesweep.dll] esweep; # replace this line by something like package require ...
+load ../../../libesweeptcl.so esweep; # replace this line by something like package require ...
 
 # set defaults
 set samplerate 48000
@@ -81,7 +77,8 @@ proc play {au sig size interval _play} {
 }
 
 # open soundcard
-set au [openAudioDevice audio:/dev/audio $samplerate $framesize]
+set au [openAudioDevice audio:/dev/audio1 $samplerate $framesize]
+esweep::audioSync -handle $au
 
 set size [expr {$samplerate > $framesize ? $samplerate : $framesize}]
 set out [genSignals $au $samplerate $size $frequency $level]
@@ -89,7 +86,7 @@ set out [genSignals $au $samplerate $size $frequency $level]
 if {$duration > 0} {after [expr {int(0.5+1000*$duration)}] set play 0}
 set play 1
 
-set interval [expr {int(1000.0*$framesize/(2*$samplerate))}]
+set interval [expr {int(1000.0*$framesize/(4*$samplerate))}]
 play $au $out [esweep::size -obj [lindex $out 0]] $interval play
 
 exit
