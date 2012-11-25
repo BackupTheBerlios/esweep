@@ -222,18 +222,24 @@ proc ::TkEsweepXYPlot::removeTrace {plotName traceID} {
 	variable cData
 	
 	if {[info exists plots($plotName,Traces)]==0} return
-	if {[info exists plots($plotName,Traces,$traceID,Scale)]==0} {
-		return -code error "Trace or plot does not exist!"
+
+	if {$traceID eq {all}} {
+		set traceID $plots($plotName,Traces)
 	}
-	
+
 	set c $cData($plotName,pathName)
-	catch {$c delete $plots($plotName,Traces,$traceID,ID1)}
-	catch {$c delete $plots($plotName,Traces,$traceID,ID2)}
 
-	array unset plots $plotName,Traces,$traceID,*
-	set i [lsearch $plots($plotName,Traces) $traceID]
-	set plots($plotName,Traces) [lreplace $plots($plotName,Traces) $i $i]
+	foreach id $traceID {
+		if {[info exists plots($plotName,Traces,$id,Scale)]==0} {
+			return -code error "Trace or plot does not exist!"
+		}
+		catch {$c delete $plots($plotName,Traces,$id,ID1)}
+		catch {$c delete $plots($plotName,Traces,$id,ID2)}
 
+		array unset plots $plotName,Traces,$id,*
+		set i [lsearch $plots($plotName,Traces) $id]
+		set plots($plotName,Traces) [lreplace $plots($plotName,Traces) $i $i]
+	}
 
 	set plots($plotName,Config,Dirty) 1
 
@@ -606,14 +612,14 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 		if {$plots($plotName,Config,Y1,Log)!="yes"} {
 			set step [expr {double($y2-$y1)/$plots($plotName,Config,Y1,Step)}]
 			set mStep [expr {1.0*$step/$plots($plotName,Config,Y1,MStep)}]
-			set tickStep [expr {double($plots($plotName,Config,Y1,Max)-$plots($plotName,Config,Y1,Min))/$plots($plotName,Config,Y1,Step)}]
+			set tickStep [expr {double($plots($plotName,Config,Y1,Max)-$plots($plotName,Config,Y1,Min))/$step}]
 			for {set i 1; set y $y2} {$i<$plots($plotName,Config,Y1,Step)} {incr i} {
 				# minor steps
 				for {set j 1; set my [expr {int(0.5+$y-$mStep)}]} {$j < $plots($plotName,Config,Y1,MStep)} {incr j} {
 					$c create line $x1 $my $x2 $my -tag $tag -dash $plots($plotName,Config,Y1,MStepDash)
 					set my [expr {int(0.5+$my-$mStep)}] 
 				}
-				set y [expr {int(0.5+$y2-$i*$step)}]
+				set y [expr {int(0.5+$y2-$i*$plots($plotName,Config,Y1,Step))}]
 				$c create line $x1 $y $x2 $y -tag $tag
 				# draw scale
 				set tick [format $fmtStr [expr {$i*$tickStep+$plots($plotName,Config,Y1,Min)}]]
@@ -1042,9 +1048,20 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale {all}}} {
 			Y1 {
 				foreach {traceID} $plots($plotName,Traces) {
 					set obj $plots($plotName,Traces,$traceID,Obj)
-					set df [expr {1.0*[esweep::samplerate -obj $obj]/[esweep::size -obj $obj]}]
-					set from [expr {int(0.5+$plots($plotName,Config,X,Min)/$df)}]
-					set to [expr {int(0.5+$plots($plotName,Config,X,Max)/$df)}]
+					switch [esweep::type -obj $obj] {
+						wave -
+						complex {
+							set df [expr {1000.0/[esweep::samplerate -obj $obj]}]
+							set from [expr {int(0.5+$plots($plotName,Config,X,Min)/$df)}]
+							set to [expr {int(0.5+$plots($plotName,Config,X,Max)/$df)}]
+						}
+						polar -
+						default {
+							set df [expr {1.0*[esweep::samplerate -obj $obj]/[esweep::size -obj $obj]}]
+							set from [expr {int(0.5+$plots($plotName,Config,X,Min)/$df)}]
+							set to [expr {int(0.5+$plots($plotName,Config,X,Max)/$df)}]
+						}
+					}
 					# if Xmax > size use the whole range
 					set to [expr {$to >= [esweep::size -obj $obj] ? -1 : $to}]
 					if {$max == {inf}} {
@@ -1107,7 +1124,7 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale {all}}} {
 				set max 0
 			} else {
 				if {$s ne {X}} {
-					set decade [expr {pow(10, floor(log10(abs($max))))}]
+					set decade [expr {pow(10, floor(log10(abs($max)))-1)}]
 					set max [expr {ceil($max/$decade)*$decade}]
 				}
 			}
@@ -1116,7 +1133,7 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale {all}}} {
 				set min 0
 			} else {
 				if {$s ne {X}} {
-					set decade [expr {pow(10, floor(log10(abs($min))))}]
+					set decade [expr {pow(10, floor(log10(abs($min)))-1)}]
 					set min [expr {floor($min/$decade)*$decade}]
 				}
 			}
