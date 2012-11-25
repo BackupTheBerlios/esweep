@@ -57,6 +57,8 @@ namespace eval impulse {
 		Input,Global,Gain 1.0
 		# {Calibration level for the input in V/FS (RMS!)}
 		Input,Global,Cal 1.0
+		# {Single or dual channel}
+		Processing,Mode dual
 		# {Length of gate in ms}
 		Processing,Gate 100
 		# {Length of FFT in samples}
@@ -88,6 +90,7 @@ namespace eval impulse {
 		Intern,LastMic 1
 		# {Hold an event ID to make live update smooth}
 		Intern,LiveRefresh {}
+		Intern,LiveUpdateCmd {}
 		# {Last generated sweep rate}
 		Intern,SweepRate {}
 		Intern,Unsaved 0
@@ -315,7 +318,18 @@ proc measure {} {
 		writeToCmdLine {Input and reference channel are identical.} -bg red
 		return
 	}
-
+	# the sensitivity is not necessarily available for each microphone
+	# If not, then use the global sensitivity
+	if {[set mic_sense [impulse cget Mic,$mic,Sensitivity]] == {}} {
+		set mic_sense [impulse cget Mic,Global,Sensitivity]
+	}
+	# configuration for input channel
+	if {[set in_sense [impulse cget Input,$in_channel,Cal]] == {}} {
+		set in_sense [impulse cget Input,Global,Cal]
+	}
+	if {[set ref_sense [impulse cget Input,$ref_channel,Cal]] == {}} {
+		set ref_sense [impulse cget Input,Global,Cal]
+	}
 	# get the configuration for the output channel
 	# if not available, use global data
 	if {[set outlevel [impulse cget Output,$out_channel,Level]] == {}} { 
@@ -404,7 +418,11 @@ proc measure {} {
 
 	# get the system and reference response
 	set in_system [lindex $in [expr {$in_channel-1}]]
-	set in_ref [lindex $in [expr {$ref_channel-1}]]
+	if {[impulse cget Processing,Mode] eq {dual}} {
+		set in_ref [lindex $in [expr {$ref_channel-1}]]
+	} else {
+		set in_ref $signal
+	}
 
 	# calculate the IR
 	esweep::deconvolve -signal in_system  -filter $in_ref
@@ -421,6 +439,23 @@ proc measure {} {
 	} else {
 		set gate_start [expr {int(1000*$dist/343.0)}]
 	}
+	set gate_start [expr {$gate_start < 0 ? 0 : $gate_start}]
+
+	#  scaling
+	set sc [expr {$ref_sense/($in_sense*$mic_sense)}]
+	if {[impulse cget Processing,Scaling] eq {Absolute}} {
+		set sc [expr {$sc*$outlevel}]
+		set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) "Level \[Pa\]"
+	} elseif {[impulse cget Processing,Scaling] eq {Relative}} {
+		set sc [expr {$sc*[impulse cget Processing,Scaling,Reference]}]
+		set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) "Level \[Pa/[impulse cget Processing,Scaling,Reference] V\]"
+	} else {
+		bell
+		writeToCmdLine {Unknown scaling method.} -bg red
+		return 1
+	}
+	esweep::expr in_system * $sc
+
 	set ::TkEsweepXYPlot::plots(IR,Config,X,Min) $gate_start
 	set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [expr {$gate_start+[::impulse cget Processing,Gate]}]
 	if {[::TkEsweepXYPlot::exists IR 0]} {
@@ -430,44 +465,16 @@ proc measure {} {
 	}
 	::TkEsweepXYPlot::plot IR
 
-	__calcFr $mic
+	__calcFr $gate_start
 }
 
-proc __calcFr {{mic {}}} {
-	if {$mic eq {}} {set mic [impulse cget Intern,LastMic]}
-	# the sensitivity is not necessarily available for each microphone
-	# If not, then use the global sensitivity
-	if {[set mic_sense [impulse cget Mic,$mic,Sensitivity]] == {}} {
-		set mic_sense [impulse cget Mic,Global,Sensitivity]
-	}
-	set in_channel [impulse cget Input,Channel]
-	set ref_channel [impulse cget Input,Reference]
-	set out_channel [impulse cget Output,Channel]
-	if {[set in_sense [impulse cget Input,$in_channel,Cal]] == {}} {
-		set in_sense [impulse cget Input,Global,Cal]
-	}
-	if {[set ref_sense [impulse cget Input,$ref_channel,Cal]] == {}} {
-		set ref_sense [impulse cget Input,Global,Cal]
-	}
-	if {[set outlevel [impulse cget Output,$out_channel,Level]] == {}} { 
-		set outlevel [impulse cget Output,Global,Level]
-	}
-
-	if {[set dist [impulse cget Mic,$mic,Distance]] == {}} {
-		# no distance stored, use the default
-		set dist [impulse cget Mic,Global,Distance]
-	}
+proc __calcFr {gate_start} {
+	impulse configure Intern,LiveUpdateCmd [info level 0]
 	set samplerate [impulse cget Audio,Samplerate]
 
 	# get the impulse response
 	if {[catch {set ir [::TkEsweepXYPlot::getTrace IR 0]}]} return
 
-	if {$dist < 0} {
-		# automatic gate adjustement, 5 ms pre delay
-		set gate_start [expr {int(0.5+[esweep::maxPos -obj $ir]-0.005*$samplerate)}]
-	} else {
-		set gate_start [expr {int(0.5+$dist/343.0*$samplerate)}]
-	}
 	set gate_start [expr {$gate_start < 0 ? [esweep::size -obj $ir] + $gate_start : $gate_start}]
 	set gate_stop [expr {int(0.5+$gate_start+[::TkEsweepXYPlot::getCursor IR 2]/1000.0*$samplerate)}]
 	set gate_length [expr {$gate_stop - $gate_start+1}]
@@ -482,21 +489,9 @@ proc __calcFr {{mic {}}} {
 		}
 	}
 
-	# the scaling factor
-	set sc [expr {$in_sense/($ref_sense*$mic_sense*2e-5)}]
-	set sc [expr {$in_sense/($ref_sense*$mic_sense)}]
-	if {[impulse cget Processing,Scaling] eq {Absolute}} {
-		set sc [expr {$sc*[impulse cget	Processing,Scaling,Reference]}]
-	} elseif {[impulse cget Processing,Scaling] eq {Relative}} {
-		set sc [expr {$sc*$outlevel}]
-	} else {
-		bell
-		writeToCmdLine {Unknown scaling method.} -bg red
-		return 1
-	}
+	set sc [expr {1.0/2e-5}]
 
 	# cut out the IR
-	esweep::expr ir * $sc
 	if {$gate_stop >= [esweep::size -obj $ir]} {
 		set fr [esweep::create -type [esweep::type -obj $ir] -size $gate_length -samplerate $samplerate]
 		set l [esweep::copy -src $ir -dst fr -srcIdx $gate_start]
@@ -505,12 +500,14 @@ proc __calcFr {{mic {}}} {
 		set fr [esweep::get -obj $ir -from $gate_start -to $gate_stop]
 	}
 	esweep::toWave -obj fr
+	esweep::expr fr * $sc
 	esweep::fft -obj fr -inplace
 	esweep::toPolar -obj fr
 	esweep::lg -obj fr
 	esweep::expr fr * 20
 	if {[impulse cget Processing,Smoothing] > 0} {esweep::smooth -obj fr -factor [impulse cget Processing,Smoothing]}
 
+	::TkEsweepXYPlot::removeTrace FR all
 	if {[::TkEsweepXYPlot::exists FR 0]} {
 		::TkEsweepXYPlot::configTrace FR 0 -trace $fr
 	} else {
@@ -525,7 +522,6 @@ proc __calcFr {{mic {}}} {
 	}
 
 	::TkEsweepXYPlot::plot FR
-
 	return 0
 }
 
@@ -543,8 +539,11 @@ proc __calcDistortions {ir gate_start length sc} {
 		if {$k < 2} continue
 		# find the position of the k'th distortion IR
 		# $start is already in samples
-		set start [expr {$gate_start-int(0.5+log($k)*[impulse cget Intern,SweepRate]*[impulse cget Audio,Samplerate])}]
+		set shift [expr {int(0.5+log($k)*[impulse cget Intern,SweepRate]*[impulse cget Audio,Samplerate])}]
+		set start [expr {$gate_start-$shift}]
 		set start [expr {$start < 0 ? [esweep::size -obj $ir] + $start : $start}]
+		set max_length [expr {$shift-int(0.5+log($k-1)*[impulse cget Intern,SweepRate]*[impulse cget Audio,Samplerate])}]
+		set length [expr {$length > $max_length ? $max_length : $length}]
 
 		set stop [expr {$start+$length}]
 		# cut out harmonic impulse response
@@ -558,6 +557,7 @@ proc __calcDistortions {ir gate_start length sc} {
 		}
 		# calculate distortion response
 		esweep::toWave -obj fr
+		esweep::expr fr * $sc
 		esweep::fft -obj fr -inplace
 		esweep::toPolar -obj fr
 		esweep::lg -obj fr
@@ -680,6 +680,8 @@ proc createPlots {fr ir} {
 	set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) {Level [V]}
 	set ::TkEsweepXYPlot::plots(IR,Config,Y1,Precision) 3
 	set ::TkEsweepXYPlot::plots(IR,Config,Y1,Autoscale) {on}
+	set ::TkEsweepXYPlot::plots(IR,Config,Y1,Min) {-1}
+	set ::TkEsweepXYPlot::plots(IR,Config,Y1,Max) {1}
 	set ::TkEsweepXYPlot::plots(IR,Config,Y1,Bounds) [list -240 240]
 	set ::TkEsweepXYPlot::plots(IR,Config,Y1,Log) {no}
 
@@ -688,7 +690,8 @@ proc createPlots {fr ir} {
 
 proc liveUpdate {args} {
 	catch {after cancel [impulse cget Intern,LiveRefresh]}
-	impulse configure Intern,LiveRefresh [after 100 __calcFr {}]
+	set cmd [impulse cget Intern,LiveUpdateCmd]
+	impulse configure Intern,LiveRefresh [after 100 $cmd]
 }
 
 # zoom in and out of the impulse response
@@ -697,12 +700,12 @@ proc zoom {what} {
 		# get the cursor positions
 		set x1 [::TkEsweepXYPlot::getCursor IR 2]
 
-		set ::TkEsweepXYPlot::plots(IR,Config,X,Min) 0
+		#set ::TkEsweepXYPlot::plots(IR,Config,X,Min) 0
 		set ::TkEsweepXYPlot::plots(IR,Config,X,Max) $x1
 
 		::TkEsweepXYPlot::plot IR
 	} else {
-		set ::TkEsweepXYPlot::plots(IR,Config,X,Min) 0
+		#set ::TkEsweepXYPlot::plots(IR,Config,X,Min) 0
 		set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [::impulse cget Processing,Gate]
 		::TkEsweepXYPlot::plot IR
 	}
@@ -733,7 +736,11 @@ proc execCmdLine {} {
 
 proc :set {args} {
 	if {[llength $args] > 1} {
-		impulse configure [lindex $args 0] [lindex $args 1]
+		if {[catch {expr [join [lrange $args 1 end]]}]} {
+			impulse configure [lindex $args 0] [join [lrange $args 1 end]]
+		} else {
+			impulse configure [lindex $args 0] [expr [join [lrange $args 1 end]]]
+		}
 	} else {
 		writeToCmdLine "[lindex $args 0]: [impulse cget [lindex $args 0]]"
 	}
