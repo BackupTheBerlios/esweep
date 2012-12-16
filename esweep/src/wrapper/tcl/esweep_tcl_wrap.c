@@ -353,13 +353,14 @@ static void UpdateStringOfEsweepObj(Tcl_Obj *esweepObjPtr) {
  */
 
 static void DupEsweepAudio(Tcl_Obj *srcPtr, Tcl_Obj *copyPtr);
+static void UpdateStringOfEsweepAudioObj(Tcl_Obj *objPtr); 
 static void CloseEsweepAudio(Tcl_Obj *esweepAudioPtr);
 
 const Tcl_ObjType tclEsweepAudioType = {
 	ESWEEP_TYPE_NAME"_audio", /* name */
 	CloseEsweepAudio, /* freeIntRepProc */
 	DupEsweepAudio, /* dupIntRepProc */
-	NULL, /* updateStringProc */
+	UpdateStringOfEsweepAudioObj, /* updateStringProc */
 	NULL
 	//SetFromAnyEsweepObj /* setFromAnyProc */
 }; 
@@ -370,6 +371,18 @@ static void DupEsweepAudio(Tcl_Obj *srcPtr, Tcl_Obj *copyPtr) {
 	copyPtr->internalRep.otherValuePtr=(void*) srcEa; 
 
 	TCLESWEEPAUDIO_INCREFCOUNT(srcEa); 
+}
+
+static void UpdateStringOfEsweepAudioObj(Tcl_Obj *objPtr) {
+	/* Create a string from the pointer
+	 * We use at max 34+1 characters, this is enough for even 
+	 * 128 bit long pointers */
+	TclEsweepAudio *eaPtr=(TclEsweepAudio*) objPtr->internalRep.otherValuePtr; 
+	char pstr[35]; 
+	snprintf(pstr, sizeof(pstr), "%p", eaPtr->handle); 
+	objPtr->length=strnlen(pstr, sizeof(pstr)); 
+	objPtr->bytes=ckalloc((unsigned) objPtr->length); 
+	STRCPY(objPtr->bytes, pstr, objPtr->length); 
 }
 
 static void CloseEsweepAudio(Tcl_Obj *objPtr) {

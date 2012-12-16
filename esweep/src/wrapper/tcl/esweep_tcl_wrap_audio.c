@@ -72,8 +72,9 @@ int esweepAudioOpen(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj
 	ret->internalRep.otherValuePtr=ea; 
 	ret->typePtr = (Tcl_ObjType*) &tclEsweepAudioType; 
 	/* The objects string representation is simply the pointer address */
-	ret->bytes=Tcl_Alloc(256);
-	snprintf(ret->bytes, 256, "%p", handle); 
+	//ret->bytes=Tcl_Alloc(256);
+	//snprintf(ret->bytes, 256, "%p", handle); 
+	Tcl_InvalidateStringRep(ret); 
 	Tcl_SetObjResult(interp, ret);
 	return TCL_OK;
 }
