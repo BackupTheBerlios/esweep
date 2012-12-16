@@ -42,7 +42,7 @@ int esweepExpr(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CON
 	double vald; 
 	Real valr,vali; 
 	int scalar=0;
-	char type[10]; 
+	const char *type=NULL; 
 
 	CHECK_NUM_ARGS(objc == 4, "objVarName operator \"obj or number\""); 
 
@@ -59,16 +59,16 @@ int esweepExpr(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CON
 		}
 		/* convert it into an esweep object */
 		esweep_type(a, &type); 
-		if (strcmp(type, "wave") || strcmp(type, "surface")) {
+		if (strcmp(type, "wave") == 0 || strcmp(type, "surface") == 0) {
 			b=esweep_create("wave", a->samplerate, 1);
 			valr=(Real) vald; 
 			esweep_buildWave(b, &valr, 1);
-		} else if (strcmp(type, "complex")) {
+		} else if (strcmp(type, "complex") == 0) {
 			b=esweep_create("complex", a->samplerate, 1);
 			valr=(Real) vald; 
 			vali=(Real) 0.0; 
 			esweep_buildComplex(b, &valr, &vali, 1); 
-		} else if (strcmp(type, "polar")) {
+		} else if (strcmp(type, "polar") == 0) {
 			b=esweep_create("polar", a->samplerate, 1);
 			valr=(Real) vald; 
 			vali=(Real) 0.0; 
