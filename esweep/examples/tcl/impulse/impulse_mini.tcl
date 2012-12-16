@@ -2,159 +2,35 @@
 package require Tk 8.5
 package require Ttk 8.5
 
-#load ../../esweep.dll; # replace this line by something like package require ...
+#load ./esweep.dll; # replace this line by something like package require ...
 load ../../../libesweeptcl.so esweep; # replace this line by something like package require ...
 source ../TkEsweepXYPlot/TkEsweepXYPlot.tcl
+source ./impulse_config.tcl
+source ./impulse_audio.tcl
+source ./impulse_math.tcl
+
+# storage for various variables
+namespace eval ::impulse::variables {
+	variable sig
+	variable sys
+	variable ref
+	variable sweep_rate
+	variable mic_distance
+	variable refresh
+}
 
 # This program measures the impulse response of a system. 
 # And nothing else. No overlays or any crap. But it's very clean code. 
 # It reads the same configuration as the full-featured impulse.tcl. It does
 # not save the configuration, though, to prevent changing the main programs configuration. 
 
-namespace eval impulse {
-	variable config
-	array set config {
-		# {Audio device}
-		Audio,Device {audio:/dev/audio0}
-		# {Samplerate}
-		Audio,Samplerate 48000
-		# {bitrate}
-		Audio,Bitdepth 16
-		# {Microphone sensitivity in V/Pa}
-		Mic,Global,Sensitivity 0.29
-		# {Microphone frequency response compensation file \
-		   If empty, no compensation is done}
-		Mic,Global,Compensation ""
-		# {Microphone distance, will be removed from the impulse response} 
-		# {for maximum frequency resolution.}
-		# {If the distance is < 0, then the program searches for the highest peak}
-		Mic,Global,Distance -1
-		# {output channel}
-		Output,Channel	1 
-		# {output level in Volt}
-		Output,Global,Level	2.0 
-		# {gain of external amplifier}
-		Output,Global,Gain 1.0
-		# {Maximum output level in 1/FS. If < 1 avoids oversteering}
-		Output,MaxFSLevel 0.9 
-		# {Calibration level for the output in V/FS (RMS!)}
-		Output,Global,Cal	1.0 
-		# {Signal type}
-		Signal,Type logsweep
-		# {Signal duration in ms}
-		Signal,Duration 2000
-		# {Signal spectrum}
-		Signal,Spectrum pink
-		# {Signal low cutoff in Hz}
-		Signal,Locut 20
-		# {Signal high cutoff in Hz}
-		Signal,Hicut 20000
-		# {Main input channel} 
-		Input,Channel	1
-		# {Reference channel}
-		Input,Reference 2
-		# {gain of external amplifier}
-		Input,Global,Gain 1.0
-		# {Calibration level for the input in V/FS (RMS!)}
-		Input,Global,Cal 1.0
-		# {Single or dual channel}
-		Processing,Mode dual
-		# {Length of gate in ms}
-		Processing,Gate 100
-		# {Length of FFT in samples}
-		# {if 0 then the length is automatically selected}
-		Processing,FFT,Size 0
-		# {The scaling can be either Relative (SPL/Pa/V)}
-		# {or Absolute (SPL)}
-		Processing,Scaling Relative
-		# {The reference level}
-		Processing,Scaling,Reference 2.83
-		# {Smoothing factor}
-		Processing,Smoothing 6
-		# {Range of FR display}
-		Processing,FR,Range 50
-		# {Show which distortions?}
-		Processing,Distortions {2 3 5}
-		# {Down to which level (wrt max of graph)?}
-		Processing,Distortions,Range 80
-
-		# {Internal part}
-		
-		# {hold the typed numbers for e. g. 12dd}
-		Intern,numBuffer {}
-		# {filename to store}
-		Intern,Filename {}
-		# {needed for blocking of a few functions while measuring}
-		Intern,Play 0
-		# {remember the last used mic; needed for live update}
-		Intern,LastMic 1
-		# {Hold an event ID to make live update smooth}
-		Intern,LiveRefresh {}
-		Intern,LiveUpdateCmd {}
-		# {Last generated sweep rate}
-		Intern,SweepRate {}
-		Intern,Unsaved 0
-	}
-	# delete comments from array
-	array unset config {#}
-
-	proc configure {opt val} {
-		variable config
-		if {[info exists config($opt)]} {
-			set config($opt) $val
-		}
-	}
-
-	proc cget {opt} {
-		variable config
-		if {[info exists config($opt)]} {
-			return $config($opt)
-		} else {
-			return {}
-		}
-	}
-
-	proc append {opt val} {
-		variable config
-		if {[info exists config($opt)]} {
-			lappend config($opt) $val
-		}
-	}
-
-	proc load {} {
-		variable config
-		# standard filename: ~/.esweep/impulse.conf
-		# check for directory
-		set filename [glob ~]/.esweep/impulse.conf
-		if {[catch {set fp [open $filename r]}]} {
-			return 1
-		}
-		if {$fp == {}} {
-			puts stderr {Can't open config file}
-			return 1
-		}
-		set conf [read $fp]
-		close $fp
-		# remove comments
-		set conf [regsub -all {(?p)#.*} $conf { }]
-		# remove newlines
-		set conf [regsub -all {\n} $conf { }]
-		# remove "bad" symbols
-		set conf [regsub -all {[\[\]]} $conf { }]
-		# apply as configuration
-		array set config $conf
-
-		return 0
-	}
-
-	namespace ensemble create -subcommands [list configure cget append load]
-}
-
 proc bindings {win} {
 	bind $win <a> [list TkEsweepXYPlot::autoscale FR]
 
 	# measurement bindings
 	bind $win <m> [list measure]
+	bind $win <u> [list liveUpdate]
+	bind $win <F5> [list liveUpdate]
 	event add <<NumKey>> <Key-0>
 	event add <<NumKey>> <Key-1>
 	event add <<NumKey>> <Key-2>
@@ -165,8 +41,8 @@ proc bindings {win} {
 	event add <<NumKey>> <Key-7>
 	event add <<NumKey>> <Key-8>
 	event add <<NumKey>> <Key-9>
-	bind $win <<NumKey>> [list impulse append Intern,numBuffer %K]
-	bind $win <Escape> [list impulse configure Intern,numBuffer {}]
+	bind $win <<NumKey>> [list ::impulse::config append Intern,numBuffer %K]
+	bind $win <Escape> [list ::impulse::config configure Intern,numBuffer {}]
 
 	# program control commands
 	bind $win <colon> [list enterCommandLine]
@@ -174,8 +50,6 @@ proc bindings {win} {
 	# zooming
 	bind $win <z> [list zoom in]
 	bind $win <Z> [list zoom out]
-
-	bind $win <F5> [list __calcFr]
 }
 
 proc deleteBindings {win} {
@@ -184,403 +58,259 @@ proc deleteBindings {win} {
 	}
 }
 
-proc openAudioDevice {{out_channels {1}} {in_channels {1}}} {
-	set samplerate [::impulse cget Audio,Samplerate]
-	set dev [::impulse cget Audio,Device]
-	set bitdepth [::impulse cget Audio,Bitdepth]
-	if {[catch {set au_hdl [esweep::audioOpen -device $dev]}]} {
-			bell
-			writeToCmdLine {Error opening audio device. Check configuration.} -bg red
-			return -code error {Error opening audio device. Check configuration.}
-	}
-	if {[esweep::audioConfigure -handle $au_hdl -param {precision} -value $bitdepth] < 0} {
-		bell
-		esweep::audioClose -handle $au_hdl
-		return -code error {Error configuring bitdepth on audio device. Check configuration.} 
-	}
-	if {[esweep::audioConfigure -handle $au_hdl -param {samplerate} -value $samplerate] < 0} {
-		bell
-		esweep::audioClose -handle $au_hdl
-		return -code error {Error configuring samplerate on audio device. Check configuration.} 
-	}
-	# check the number of channels; if there are not enough to use the output channel, 
-	# try to configure some more
-	if {$out_channels > [esweep::audioQuery -handle $au_hdl -param {play_channels}]} {
-		 if {[esweep::audioConfigure -handle $au_hdl -param {play_channels} -value $out_channel] < 0} {
-			bell
-			esweep::audioClose -handle $au_hdl
-			return -code error {Error configuring playback channel. Check configuration.} 
-		}
-	}
-	if {$in_channels > [esweep::audioQuery -handle $au_hdl -param {record_channels}]} {
-		 if {[esweep::audioConfigure -handle $au_hdl -param {record_channels} -value $in_channel] < 0} {
-			bell
-			esweep::audioClose -handle $au_hdl
-			return -code error {Error configuring record channel. Check configuration.} 
-		}
-	}
-		
-	return $au_hdl
-}
-
-# create a test tone
-proc :test {{f 1000}} {
-	set samplerate [impulse cget Audio,Samplerate]
-	# get the frequency
-	if {$f eq {}} {
-		if {[join [impulse cget Intern,numBuffer] {}] != {}} {
-			set f [join [impulse cget Intern,numBuffer] {}]
-		}
-		impulse configure Intern,numBuffer {}
-	}
-	writeToCmdLine "Creating test tone: $f Hz"
-	set out_channel [impulse cget Output,Channel]
+# calculate scaling for the output channel
+# notify the user when the level has to be adjusted
+# Return values: the current output channel, output sensitivity, soundcard output level
+proc outputScaling {} {
+	set out_channel [::impulse::config cget Output,Channel]
 
 	# get the configuration for the output channel
 	# if not available, use global data
-	if {[set outlevel [impulse cget Output,$out_channel,Level]] == {}} { 
-		set outlevel [impulse cget Output,Global,Level]
+	if {[set outlevel [::impulse::config cget Output,$out_channel,Level]] == {}} { 
+		set outlevel [::impulse::config cget Output,Global,Level]
 	}
-	if {[set outcal [impulse cget Output,$out_channel,Cal]] == {}} { 
-		set outcal [impulse cget Output,Global,Cal]
+	if {[set outcal [::impulse::config cget Output,$out_channel,Cal]] == {}} { 
+		set outcal [::impulse::config cget Output,Global,Cal]
 	}
-	if {[set outgain [impulse cget Output,$out_channel,Gain]] == {}} { 
-		set outgain [impulse cget Output,Global,Gain]
+	if {[set outgain [::impulse::config cget Output,$out_channel,Gain]] == {}} { 
+		set outgain [::impulse::config cget Output,Global,Gain]
 	}
-	set outmax [impulse cget Output,MaxFSLevel]
+	set outmax [::impulse::config cget Output,MaxFSLevel]
+	set out_sense [expr {$outcal*$outgain}]
 
-	set level [expr {$outlevel/($outgain*$outcal)}]
+	set level [expr {1.414*$outlevel/($outgain*$outcal)}]
 	if {$level < 0.0} {set level 0.0}
 	if {$level > $outmax} {
 		set level $outmax
 		# use the opportunity und reset the output voltage for this channel if needed
-		impulse configure Output,$out_channel,Level [set outlevel [expr {$level*$outgain*$outcal}]]
-		writeToCmdLine "Adjusted the output level for channel $out_channel to $outlevel." -bg yellow
+		# We create the option, because it might not has been set already
+		::impulse::config create Output,$out_channel,Level [set outlevel [expr {$level*$outgain*$outcal/1.414}]]
+		writeToCmdLine "Adjusted the output level for channel $out_channel to [format "%.3f" $outlevel]." -bg yellow
 	}
+	return [list $out_channel $out_sense $level]
+}
 
-	set au_hdl [openAudioDevice $out_channel]
-	set framesize [esweep::audioQuery -handle $au_hdl -param framesize]
+proc inputScaling {mic} {
+	set in_channel [::impulse::config cget Input,Channel]
+	set ref_channel [::impulse::config cget Input,Reference]
+	# the sensitivity is not necessarily available for each microphone
+	# If not, then use the global sensitivity
+	if {[set mic_sense [::impulse::config cget Mic,$mic,Sensitivity]] == {}} {
+		set mic_sense [::impulse::config cget Mic,Global,Sensitivity]
+	}
+	# configuration for input channel
+	if {[set in_sense [::impulse::config cget Input,$in_channel,Cal]] == {}} {
+		set in_sense [::impulse::config cget Input,Global,Cal]
+	}
+	if {[set ref_sense [::impulse::config cget Input,$ref_channel,Cal]] == {}} {
+		set ref_sense [::impulse::config cget Input,Global,Cal]
+	}
+	if {[set in_gain [::impulse::config cget Input,$in_channel,Gain]] == {}} { 
+		set in_gain [::impulse::config cget Input,Global,Gain]
+	}
+	if {[set ref_gain [::impulse::config cget Input,$ref_channel,Gain]] == {}} { 
+		set ref_gain [::impulse::config cget Input,Global,Gain]
+	}
+	set in_sense [expr {$in_sense*$in_gain}]
+	set ref_sense [expr {$ref_sense*$ref_gain}]
 
-	# the esweep audio system needs one signal for each channel up to the output channel
-	# the unused channels will be zero
-	set out [list]
-	for {set i 1} {$i < $out_channel} {incr i} {
-		set signal [esweep::create -type wave -samplerate $samplerate -size $framesize]
-		lappend out $signal
+	return [list $in_channel $in_sense $mic_sense $ref_channel $ref_sense]
+}
+
+# create a test tone
+proc :test {{f 1000}} {
+	set samplerate [::impulse::config cget Audio,Samplerate]
+	set bitdepth [::impulse::config cget Audio,Bitdepth]
+	# get the frequency
+	if {$f eq {}} {
+		if {[join [::impulse::config cget Intern,numBuffer] {}] != {}} {
+			set f [join [::impulse::config cget Intern,numBuffer] {}]
+		}
+		::impulse::config configure Intern,numBuffer {}
 	}
-	# append the output signal
-	set signal [esweep::create -type wave -samplerate $samplerate -size $framesize]
-	lappend out $signal
-	if {[::esweep::generate sine \
-		-obj signal \
-		-frequency $f] < 0.0} {
-			bell
-			writeToCmdLine {Error generating signal. Check configuration.} -bg red
-			return
-	}
-	esweep::expr signal * $level
+	writeToCmdLine "Creating test tone: $f Hz"
+
+	lassign [outputScaling] out_channel out_sense level
 
 	# play
 	deleteBindings .
-	bind . <Escape> [list impulse configure Intern,Play 0]
-	impulse configure Intern,Play 1
-	# synchronize the in/out buffers
-	esweep::audioSync -handle $au_hdl
-	while {[impulse cget Intern,Play]} {
-		set offset 0
-		# create the signal every time new and filter it
-		while {$offset < $framesize} {
-			set offset [esweep::audioOut -handle $au_hdl -signals $out -offset $offset]
-		}
-		update
-	}
+	bind . <Escape> {::impulse::audio stop}
+	::impulse::audio open [::impulse::config cget Audio,Device] $samplerate $bitdepth $out_channel
+	::impulse::audio test $f $out_channel $level
 	# restore the bindings
 	bindings .
+	::impulse::audio close
 
-	# close the audio device
-	esweep::audioSync -handle $au_hdl
-	esweep::audioClose -handle $au_hdl
 }
 
 proc measure {} {
+	set samplerate [::impulse::config cget Audio,Samplerate]
+	set bitdepth [::impulse::config cget Audio,Bitdepth]
 	# get the microphone number
-	if {[set mic [join [impulse cget Intern,numBuffer] {}]] == {}} {set mic 1}
+	if {[set mic [join [::impulse::config cget Intern,numBuffer] {}]] == {}} {set mic 1}
 	writeToCmdLine "Measuring Mic $mic"
-	impulse configure Intern,LastMic $mic
-	impulse configure Intern,numBuffer {}
+	::impulse::config configure Intern,LastMic $mic
+	::impulse::config configure Intern,numBuffer {}
 
-	# check the configuration, use defaults when necessary
-	set out_channel [impulse cget Output,Channel]
-	set in_channel [impulse cget Input,Channel]
-	set ref_channel [impulse cget Input,Reference]
+	if {[set ::impulse::variables::mic_distance [::impulse::config cget Mic,$mic,Distance]] == {}} {
+		# no distance stored, use the default
+		set ::impulse::variables::mic_distance [::impulse::config cget Mic,Global,Distance]
+	}
+	# get input sensitivity
+	lassign [inputScaling $mic] in_channel in_sense mic_sense ref_channel ref_sense
 	if {$in_channel == $ref_channel} {
 		bell
 		writeToCmdLine {Input and reference channel are identical.} -bg red
 		return
 	}
-	# the sensitivity is not necessarily available for each microphone
-	# If not, then use the global sensitivity
-	if {[set mic_sense [impulse cget Mic,$mic,Sensitivity]] == {}} {
-		set mic_sense [impulse cget Mic,Global,Sensitivity]
-	}
-	# configuration for input channel
-	if {[set in_sense [impulse cget Input,$in_channel,Cal]] == {}} {
-		set in_sense [impulse cget Input,Global,Cal]
-	}
-	if {[set ref_sense [impulse cget Input,$ref_channel,Cal]] == {}} {
-		set ref_sense [impulse cget Input,Global,Cal]
-	}
-	# get the configuration for the output channel
-	# if not available, use global data
-	if {[set outlevel [impulse cget Output,$out_channel,Level]] == {}} { 
-		set outlevel [impulse cget Output,Global,Level]
-	}
-	if {[set outcal [impulse cget Output,$out_channel,Cal]] == {}} { 
-		set outcal [impulse cget Output,Global,Cal]
-	}
-	if {[set outgain [impulse cget Output,$out_channel,Gain]] == {}} { 
-		set outgain [impulse cget Output,Global,Gain]
-	}
-	set outmax [impulse cget Output,MaxFSLevel]
+	lassign [outputScaling] out_channel out_sense level 
 
-	set level [expr {$outlevel/($outgain*$outcal)}]
-	if {$level < 0.0} {set level 0.0}
-	if {$level > $outmax} {
-		set level $outmax
-		# use the opportunity und reset the output voltage for this channel if needed
-		impulse configure Output,$out_channel,Level [set outlevel [expr {$level*$outgain*$outcal}]]
-		writeToCmdLine "Adjusted the output level for channel $out_channel to $outlevel." -bg yellow
-	}
-
-	# we open the audio device now
-	# because we need the framesize to avoid distortions
-	set au_hdl [openAudioDevice $out_channel [expr {$in_channel > $ref_channel ? $in_channel : $ref_channel}]]
-
-	# get the samplerate
-	set samplerate [esweep::audioQuery -handle $au_hdl -param samplerate]
-	# the desired length of the sweep
-	set length [expr {int(0.5+([impulse cget Signal,Duration])*$samplerate/1000.0)}]
-	# the length must be adjusted to the next integer multiple of the framesize
-	set framesize [esweep::audioQuery -handle $au_hdl -param framesize]
-	set length [expr {int(0.5+ceil(1.0*$length/$framesize)*$framesize)}]
-
-	# the esweep audio system needs one signal for each channel
-	# up to the output channel and the input channel, respectively (see below)
-	set out [list]
-	for {set i 0} {$i < $out_channel} {incr i} {
-		lappend out [esweep::create -type wave -samplerate [impulse cget Audio,Samplerate] -size $length]
-	}
-	
-	set signal [lindex $out [expr {$out_channel-1}]]
-	if {[set rate [::esweep::generate \
-		[impulse cget Signal,Type] \
-		-obj signal \
-		-spectrum [impulse cget Signal,Spectrum] \
-		-locut [impulse cget Signal,Locut] \
-		-hicut [impulse cget Signal,Hicut] \
-		]] < 0.0} {
-			bell
-			writeToCmdLine {Error generating signal. Check configuration.} -bg red
-			return
-	}
-	impulse configure Intern,SweepRate $rate
-	esweep::expr signal * $level
-
-	# The input signal must be long enough to get all of the system response
-	# A delay of 200 ms will be enough for any delay
-	set totlength [expr {int(0.5+$length+1.0*$samplerate)}]
-	set totlength [expr {int(0.5+ceil(1.0*$totlength/$framesize)*$framesize)}]
-	# the input signal containers
-	set in [list]
-	for {set i 0} {$i < [expr {$in_channel > $ref_channel ? $in_channel : $ref_channel}]} {incr i} {
-		lappend in [esweep::create -type wave -samplerate $samplerate -size $totlength]
-	}
-
-	# synchronize the in/out buffers
-	esweep::audioSync -handle $au_hdl
-
-	# measure
-	set offset 0
-	# first play and record simultaneously...
-	while {$offset < $length} {
-		esweep::audioIn -handle $au_hdl -signals $in -offset $offset 
-		set offset [esweep::audioOut -handle $au_hdl -signals $out -offset $offset]
-	}
-	# ...then record the rest
-	while {$offset < $totlength} {
-		set offset [esweep::audioIn -handle $au_hdl -signals $in -offset $offset] 
-	}
-	# sync again to clean the audio buffer
-	esweep::audioSync -handle $au_hdl
-
-	# close the audio device
-	esweep::audioClose -handle $au_hdl
-
-	# get the system and reference response
-	set in_system [lindex $in [expr {$in_channel-1}]]
-	if {[impulse cget Processing,Mode] eq {dual}} {
-		set in_ref [lindex $in [expr {$ref_channel-1}]]
-	} else {
-		set in_ref $signal
-	}
-
-	# calculate the IR
-	esweep::deconvolve -signal in_system  -filter $in_ref
-	esweep::toWave -obj in_system
-
-	# microphone distance correction
-	if {[set dist [impulse cget Mic,$mic,Distance]] == {}} {
-		# no distance stored, use the default
-		set dist [impulse cget Mic,Global,Distance]
-	}
-	if {$dist < 0} {
-		# automatic gate adjustement, 1 ms pre delay
-		set gate_start [expr {int(1000*double([esweep::maxPos -obj $in_system])/$samplerate)-1}]
-	} else {
-		set gate_start [expr {int(1000*$dist/343.0)}]
-	}
-	set gate_start [expr {$gate_start < 0 ? 0 : $gate_start}]
-
-	#  scaling
-	set sc [expr {$ref_sense/($in_sense*$mic_sense)}]
-	if {[impulse cget Processing,Scaling] eq {Absolute}} {
-		set sc [expr {$sc*$outlevel}]
-		set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) "Level \[Pa\]"
-	} elseif {[impulse cget Processing,Scaling] eq {Relative}} {
-		set sc [expr {$sc*[impulse cget Processing,Scaling,Reference]}]
-		set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) "Level \[Pa/[impulse cget Processing,Scaling,Reference] V\]"
-	} else {
+	if {[::impulse::config cget Processing,Mode] ne {Single} && [::impulse::config cget Processing,Mode] ne {Dual}} {
 		bell
-		writeToCmdLine {Unknown scaling method.} -bg red
+		writeToCmdLine "Unknown processing mode [::impulse::config cget Processing,Mode]." -bg red
 		return 1
 	}
-	esweep::expr in_system * $sc
+	# do the measurement
+	deleteBindings .
+	bind . <Escape> {::impulse::audio stop}
+	::impulse::audio open [::impulse::config cget Audio,Device] $samplerate $bitdepth $out_channel $in_channel
+	lassign [::impulse::audio measure $out_channel $in_channel $ref_channel $level \
+		[::impulse::config cget Signal,Type] [::impulse::config cget Signal,Duration] \
+		[::impulse::config cget Signal,Spectrum] [::impulse::config cget Signal,Locut] \
+		[::impulse::config cget Signal,Hicut]] ::impulse::variables::sig ::impulse::variables::sys ::impulse::variables::ref ::impulse::variables::sweep_rate
+	# restore the bindings
+	bindings .
+	::impulse::audio close
+	# scale input signal
+	::impulse::math scale $::impulse::variables::sys [::impulse::config cget Processing,Mode] \
+			[::impulse::config cget Processing,Scaling] \
+			[::impulse::config cget Processing,Scaling,Reference] \
+			$out_sense $in_sense $ref_sense $mic_sense
 
-	set ::TkEsweepXYPlot::plots(IR,Config,X,Min) $gate_start
-	set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [expr {$gate_start+[::impulse cget Processing,Gate]}]
-	if {[::TkEsweepXYPlot::exists IR 0]} {
-		::TkEsweepXYPlot::configTrace IR 0 -trace [esweep::clone -src $in_system]
-	} else {
-		::TkEsweepXYPlot::addTrace IR 0 IR [esweep::clone -src $in_system]
-	}
-	::TkEsweepXYPlot::plot IR
-
-	__calcFr $gate_start
+	calcIR
+	calcFR
 }
 
-proc __calcFr {gate_start} {
-	impulse configure Intern,LiveUpdateCmd [info level 0]
-	set samplerate [impulse cget Audio,Samplerate]
+proc calcIR {} {
+	set samplerate [esweep::samplerate -obj $::impulse::variables::sys]
+	# set up display
+	if {[::impulse::config cget Processing,Mode] eq {Dual}} {
+		set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) \
+			"Level \[Pa/[::impulse::config cget Processing,Scaling,Reference] V\]"
+		set ::TkEsweepXYPlot::plots(FR,Config,Y1,Label) \
+			"SPL \[dB re 20µPa/[::impulse::config cget Processing,Scaling,Reference] V\]"
 
-	# get the impulse response
-	if {[catch {set ir [::TkEsweepXYPlot::getTrace IR 0]}]} return
-
-	set gate_start [expr {$gate_start < 0 ? [esweep::size -obj $ir] + $gate_start : $gate_start}]
-	set gate_stop [expr {int(0.5+$gate_start+[::TkEsweepXYPlot::getCursor IR 2]/1000.0*$samplerate)}]
-	set gate_length [expr {$gate_stop - $gate_start+1}]
-	set fft_length [impulse cget Processing,FFT,Size]
-	if {$fft_length == 0} {
-		set fft_length [expr {int(0.5+pow(2, int(0.5+ceil(log10($gate_length)/log10(2)))))}]
 	} else {
-		if {$fft_length < $gate_length} {
+		if {[::impulse::config cget Processing,Scaling] eq {Relative}} {
+			set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) \
+				"Level \[Pa/[::impulse::config cget Processing,Scaling,Reference] V\]"
+			set ::TkEsweepXYPlot::plots(FR,Config,Y1,Label) \
+				"SPL \[dB re 20µPa/[::impulse::config cget Processing,Scaling,Reference] V\]"
+		} elseif {[::impulse::config cget Processing,Scaling] eq {Absolute}} {
+			set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) \
+				"Level \[Pa\]"
+			set ::TkEsweepXYPlot::plots(FR,Config,Y1,Label) \
+				"SPL \[dB re 20µPa\]"
+		} else {
 			bell
-			writeToCmdLine {Gate length exceeds FFT length} -bg red
+			writeToCmdLine "Unknown scaling method [::impulse::config cget Processing,Scaling]." -bg red
 			return 1
 		}
 	}
 
-	set sc [expr {1.0/2e-5}]
+	set ir [::impulse::math calcIR [::impulse::config cget Processing,Mode] \
+		$::impulse::variables::sig $::impulse::variables::sys $::impulse::variables::ref]
 
-	# cut out the IR
-	if {$gate_stop >= [esweep::size -obj $ir]} {
-		set fr [esweep::create -type [esweep::type -obj $ir] -size $gate_length -samplerate $samplerate]
-		set l [esweep::copy -src $ir -dst fr -srcIdx $gate_start]
-		esweep::copy -src $ir -dst fr -srcIdx 0 -dstIdx $l
-	} else {	
-		set fr [esweep::get -obj $ir -from $gate_start -to $gate_stop]
+	# microphone distance correction
+	if {$::impulse::variables::mic_distance < 0 || [::impulse::config cget Processing,Mode] eq {Single}} {
+		# automatic gate adjustement, 5 ms pre delay
+		set gate_start [expr {[::impulse::math samplesToMs [esweep::maxPos -obj $ir] $samplerate]-5}]
+	} else {
+		set gate_start [expr {int(1000*$::impulse::variables::distance/343.0)}]
 	}
-	esweep::toWave -obj fr
-	esweep::expr fr * $sc
-	esweep::fft -obj fr -inplace
-	esweep::toPolar -obj fr
-	esweep::lg -obj fr
-	esweep::expr fr * 20
-	if {[impulse cget Processing,Smoothing] > 0} {esweep::smooth -obj fr -factor [impulse cget Processing,Smoothing]}
+	set gate_start [expr {$gate_start < 0 ? 0 : $gate_start}]
+
+	set ::TkEsweepXYPlot::plots(IR,Config,X,Min) $gate_start
+	set ::TkEsweepXYPlot::plots(IR,Config,Cursors,2,X) [set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [expr {$gate_start+[::impulse::config cget Processing,Gate]}]]
+	
+	if {[::TkEsweepXYPlot::exists IR 0]} {
+		::TkEsweepXYPlot::configTrace IR 0 -trace $ir
+	} else {
+		::TkEsweepXYPlot::addTrace IR 0 IR $ir
+	}
+
+	::TkEsweepXYPlot::plot IR
+}
+
+proc calcFR {} {
+	# get the impulse response
+	if {[catch {set ir [::TkEsweepXYPlot::getTrace IR 0]}]} return
+	set samplerate [esweep::samplerate -obj $ir]
+
+	# get gate
+	set gate_start $::TkEsweepXYPlot::plots(IR,Config,X,Min)
+	set gate_stop [::TkEsweepXYPlot::getCursor IR 2]
+
+	set fr [::impulse::math calcFR $ir $gate_start $gate_stop \
+			[impulse::config cget Processing,FFT,Size] \
+			[impulse::config cget Processing,Smoothing]]
 
 	::TkEsweepXYPlot::removeTrace FR all
-	if {[::TkEsweepXYPlot::exists FR 0]} {
-		::TkEsweepXYPlot::configTrace FR 0 -trace $fr
-	} else {
-		::TkEsweepXYPlot::addTrace FR 0 FR $fr
-	}
+	::TkEsweepXYPlot::addTrace FR 0 FR $fr
+	::TkEsweepXYPlot::configTrace FR 0 -color red
 
-	if {[llength [impulse cget Processing,Distortions]]} {
-		set ::TkEsweepXYPlot::plots(FR,Config,Y1,Range) [impulse cget Processing,Distortions,Range]
-		__calcDistortions $ir $gate_start $gate_length $sc
-	} else {
-		set ::TkEsweepXYPlot::plots(FR,Config,Y1,Range) [impulse cget Processing,FR,Range]
-	}
 
+	if {[llength [::impulse::config cget Processing,Distortions]]} {
+		calcHD
+		set ::TkEsweepXYPlot::plots(FR,Config,Y1,Range) [::impulse::config cget Processing,Distortions,Range]
+	} else {
+		set ::TkEsweepXYPlot::plots(FR,Config,Y1,Range) [::impulse::config cget Processing,FR,Range]
+	}
 	::TkEsweepXYPlot::plot FR
+
 	return 0
 }
 
-proc __calcDistortions {ir gate_start length sc} {
-	if {[impulse cget Intern,SweepRate] eq {} || 
-		[impulse cget Intern,SweepRate] <= 0} return
-	
-	array set colors {
-		2	darkblue
-		3	darkgreen
-		4	yellow
-		5	brown
-	}
-	foreach k [impulse cget Processing,Distortions] {
-		if {$k < 2} continue
-		# find the position of the k'th distortion IR
-		# $start is already in samples
-		set shift [expr {int(0.5+log($k)*[impulse cget Intern,SweepRate]*[impulse cget Audio,Samplerate])}]
-		set start [expr {$gate_start-$shift}]
-		set start [expr {$start < 0 ? [esweep::size -obj $ir] + $start : $start}]
-		set max_length [expr {$shift-int(0.5+log($k-1)*[impulse cget Intern,SweepRate]*[impulse cget Audio,Samplerate])}]
-		set length [expr {$length > $max_length ? $max_length : $length}]
+proc calcHD {} {
+	set colors [list \
+		brown \
+		purple \
+		darkblue \
+		darkgreen \
+		yellow \
+	]
 
-		set stop [expr {$start+$length}]
-		# cut out harmonic impulse response
-		# wrap around at end of total IR
-		if {$stop >= [esweep::size -obj $ir]} {
-			set fr [esweep::create -type [esweep::type -obj $ir] -size $length -samplerate [impulse cget Audio,Samplerate]]
-			set l [esweep::copy -src $ir -dst fr -srcIdx $start]
-			esweep::copy -src $ir -dst fr -srcIdx 0 -dstIdx $l
-		} else {	
-			set fr [esweep::get -obj $ir -from $start -to $stop]
-		}
-		# calculate distortion response
-		esweep::toWave -obj fr
-		esweep::expr fr * $sc
-		esweep::fft -obj fr -inplace
-		esweep::toPolar -obj fr
-		esweep::lg -obj fr
-		esweep::expr fr * 20
-		if {[impulse cget Processing,Smoothing] > 0} {esweep::smooth -obj fr -factor [impulse cget Processing,Smoothing]}
+	# get the impulse response
+	if {[catch {set ir [::TkEsweepXYPlot::getTrace IR 0]}]} return
+	set samplerate [esweep::samplerate -obj $ir]
 
-		# Now the trick: to shift the response on the frequency scale, adjust the samplerate
-		esweep::setSamplerate -obj fr -samplerate [expr {int(0.5+[impulse cget Audio,Samplerate]/$k)}]
+	# get gate
+	set gate_start $::TkEsweepXYPlot::plots(IR,Config,X,Min)
+	set gate_stop [::TkEsweepXYPlot::getCursor IR 2]
 
+	array set HD [::impulse::math calcHD $ir $::impulse::variables::sweep_rate \
+		[::impulse::config cget Processing,Distortions] \
+		$gate_start $gate_stop [::impulse::config cget Processing,FFT,Size] \
+		[::impulse::config cget Processing,Smoothing]]
+
+	foreach k [lsort -increasing [array names HD]] {
 		# display
-		if {[::TkEsweepXYPlot::exists FR $k]} {
-			::TkEsweepXYPlot::configTrace FR $k -trace [esweep::clone -src $fr] -color $colors($k)
-		} else {
-			::TkEsweepXYPlot::addTrace FR $k "HD$k" [esweep::clone -src $fr]
-			::TkEsweepXYPlot::configTrace FR $k -color $colors($k)
-		}
+		::TkEsweepXYPlot::addTrace FR $k HD$k $HD($k)
+		::TkEsweepXYPlot::configTrace FR $k \
+			-color [lindex $colors [expr {$k % [llength $colors]}]]
 	}
 
-
+	if {[::impulse::config cget Processing,Distortions,K1Shift] != 0} {
+		set fr [esweep::clone -src [::TkEsweepXYPlot::getTrace FR 0]]
+		esweep::expr fr + [::impulse::config cget Processing,Distortions,K1Shift]
+		# display
+		::TkEsweepXYPlot::addTrace FR 1 {Limit} $fr
+		::TkEsweepXYPlot::configTrace FR 1 -color red
+	}
 }
 
 proc enterCommandLine {} {
-	if {[impulse cget Intern,Play]} return
+	if {[::impulse::config cget Intern,Play]} return
 	.cmdLine configure -state normal
 	.cmdLine delete 0 end
 	.cmdLine insert 0 :
@@ -589,7 +319,7 @@ proc enterCommandLine {} {
 }
 
 proc writeToCmdLine {txt args} {
-	# do not allow enter the commandline while messaging
+	# do not allow entering the commandline while messaging
 	bind . <colon> {}
 	.cmdLine configure -state normal
 	foreach {opt value} $args {
@@ -657,7 +387,7 @@ proc createPlots {fr ir} {
 	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Max) -10
 	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Bounds) [list -240 240]
 	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Log) {no}
-	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Range) [impulse cget Processing,FR,Range]
+	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Range) [::impulse::config cget Processing,FR,Range]
 
 	::TkEsweepXYPlot::plot FR
 
@@ -665,7 +395,7 @@ proc createPlots {fr ir} {
 	set ::TkEsweepXYPlot::plots(IR,Config,Title) {Impulse response}
 	set ::TkEsweepXYPlot::plots(IR,Config,Cursors,1) {off}
 	set ::TkEsweepXYPlot::plots(IR,Config,Cursors,2) {on}
-	set ::TkEsweepXYPlot::plots(IR,Config,Cursors,2,X) [::impulse cget Processing,Gate]
+	set ::TkEsweepXYPlot::plots(IR,Config,Cursors,2,X) [::impulse::config cget Processing,Gate]
 	# install a trace on the 2nd cursor for live update
 	trace add execution ::TkEsweepXYPlot::fixCursor leave {liveUpdate}
 
@@ -673,7 +403,7 @@ proc createPlots {fr ir} {
 	set ::TkEsweepXYPlot::plots(IR,Config,X,Precision) 5
 	set ::TkEsweepXYPlot::plots(IR,Config,X,Autoscale) {off}
 	set ::TkEsweepXYPlot::plots(IR,Config,X,Min) 0
-	set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [::impulse cget Processing,Gate]
+	set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [::impulse::config cget Processing,Gate]
 	set ::TkEsweepXYPlot::plots(IR,Config,X,Bounds) [list 1 48000]
 	set ::TkEsweepXYPlot::plots(IR,Config,X,Log) {no}
 
@@ -689,12 +419,11 @@ proc createPlots {fr ir} {
 }
 
 proc liveUpdate {args} {
-	catch {after cancel [impulse cget Intern,LiveRefresh]}
-	set cmd [impulse cget Intern,LiveUpdateCmd]
-	impulse configure Intern,LiveRefresh [after 100 $cmd]
+	catch {after cancel [::impulse::config cget Intern,LiveRefresh]}
+	::impulse::config configure Intern,LiveRefresh [after 100 calcFR]
 }
 
-# zoom in and out of the impulse response
+# zoom in and out of the ::impulse::config response
 proc zoom {what} {
 	if {$what eq {in}} {
 		# get the cursor positions
@@ -706,7 +435,7 @@ proc zoom {what} {
 		::TkEsweepXYPlot::plot IR
 	} else {
 		#set ::TkEsweepXYPlot::plots(IR,Config,X,Min) 0
-		set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [::impulse cget Processing,Gate]
+		set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [::impulse::config cget Processing,Gate]
 		::TkEsweepXYPlot::plot IR
 	}
 }
@@ -722,12 +451,16 @@ proc execCmdLine {} {
 		after 1000 .cmdLine configure -state disabled -bg white -fg black
 		return
 	}
-	if {[catch {eval $cmd}]} {
+	if {[catch {eval $cmd} errMsg errOpts]} {
 		#bell
-		#writeToCmdLine "Command $cmd failed" -bg red
+		writeToCmdLine "Command $cmd failed" -bg red
+
 	}
 	after 1000 .cmdLine configure -state disabled -bg white -fg black
 	bindings .
+	if {[::impulse::config cget Debug]} {
+		return -options $errOpts $errMsg 
+	}
 }
 
 #######################
@@ -737,12 +470,12 @@ proc execCmdLine {} {
 proc :set {args} {
 	if {[llength $args] > 1} {
 		if {[catch {expr [join [lrange $args 1 end]]}]} {
-			impulse configure [lindex $args 0] [join [lrange $args 1 end]]
+			::impulse::config configure [lindex $args 0] [join [lrange $args 1 end]]
 		} else {
-			impulse configure [lindex $args 0] [expr [join [lrange $args 1 end]]]
+			::impulse::config configure [lindex $args 0] [expr [join [lrange $args 1 end]]]
 		}
 	} else {
-		writeToCmdLine "[lindex $args 0]: [impulse cget [lindex $args 0]]"
+		writeToCmdLine "[lindex $args 0]: [::impulse::config cget [lindex $args 0]]"
 	}
 	return 0
 }
@@ -753,7 +486,7 @@ proc :show {args} {
 }
 
 proc :w {{filename ""}} {
-	if {[impulse cget Intern,Filename] == ""} {
+	if {[::impulse::config cget Intern,Filename] == ""} {
 		if {$filename == ""} {
 			if {[set filename [tk_getSaveFile]] == ""} {
 				writeToCmdLine "Save cancelled" -bg yellow
@@ -761,13 +494,13 @@ proc :w {{filename ""}} {
 			}
 		}	
 	} else {
-		set filename [impulse cget Intern,Filename]
+		set filename [::impulse::config cget Intern,Filename]
 	}
 	# save file
 	esweep::save -filename $filename -obj [::TkEsweepXYPlot::getTrace IR 0]
 	writeToCmdLine "Saved to $filename" -bg green
-	impulse configure Intern,Unsaved 0
-	impulse configure Intern,Filename $filename
+	::impulse::config configure Intern,Unsaved 0
+	::impulse::config configure Intern,Filename $filename
 	return 0
 }
 
@@ -787,7 +520,7 @@ proc :wq! {{filename ""}} {
 
 # exit, but check for unsaved changes
 proc :q {} {
-	if {[impulse cget Intern,Unsaved]} {
+	if {[::impulse::config cget Intern,Unsaved]} {
 		writeToCmdLine "Unsaved changes. Use :q! to override" -bg red
 		return 1
 	}
@@ -803,12 +536,25 @@ proc :cal {{mic 1}} {
 	puts "Calibrating microphone $mic ..."
 }
 
+proc :export {what {filename ""}} {
+	if {$filename == ""} {
+		if {[set filename [tk_getSaveFile]] == ""} {
+			writeToCmdLine "Save cancelled" -bg yellow
+			return 1
+		}
+	}	
+	set im [::TkEsweepXYPlot::toImage $what]
+	$im write $filename -format png
+	return 0
+}
+
 ###########
 # Startup #
 ###########
 
 # try to load config file
-impulse load
+::impulse::config load
 
+#console show
 appWindows
 bindings .
