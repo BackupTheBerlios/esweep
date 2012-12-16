@@ -74,7 +74,7 @@ __EXTERN_FUNC__ void inline r2p(Polar* output, Real* input, int input_size) { /*
 	
 	for (i=0;i<input_size;i++) {
 		output[i].abs=input[i];
-		output[i].abs=0.0;
+		output[i].arg=0.0;
 	}
 }
 
