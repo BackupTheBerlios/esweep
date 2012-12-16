@@ -40,8 +40,9 @@ int esweepExpr(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CON
 	const char *operator=NULL; 
 	EsweepMathFunc *mathFunc=NULL; 
 	double vald; 
-	Real valr; 
+	Real valr,vali; 
 	int scalar=0;
+	char type[10]; 
 
 	CHECK_NUM_ARGS(objc == 4, "objVarName operator \"obj or number\""); 
 
@@ -57,9 +58,25 @@ int esweepExpr(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CON
 			return TCL_ERROR;
 		}
 		/* convert it into an esweep object */
-		b=esweep_create("wave", a->samplerate, 1);
-		valr=(Real) vald; 
-		esweep_buildWave(b, &valr, 1);
+		esweep_type(a, &type); 
+		if (strcmp(type, "wave") || strcmp(type, "surface")) {
+			b=esweep_create("wave", a->samplerate, 1);
+			valr=(Real) vald; 
+			esweep_buildWave(b, &valr, 1);
+		} else if (strcmp(type, "complex")) {
+			b=esweep_create("complex", a->samplerate, 1);
+			valr=(Real) vald; 
+			vali=(Real) 0.0; 
+			esweep_buildComplex(b, &valr, &vali, 1); 
+		} else if (strcmp(type, "polar")) {
+			b=esweep_create("polar", a->samplerate, 1);
+			valr=(Real) vald; 
+			vali=(Real) 0.0; 
+			esweep_buildPolar(b, &valr, &vali, 1); 
+		} else {
+			/* should never happen */
+			return TCL_ERROR;
+		}
 		scalar=1; // remember to delete b manually
 	}
 	
