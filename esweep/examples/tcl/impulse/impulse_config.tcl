@@ -84,8 +84,6 @@ namespace eval ::impulse::config {
 		# {Internal part}
 		# {hold the typed numbers for e. g. 12dd}
 		Intern,numBuffer {}
-		# {filename to store}
-		Intern,Filename {}
 		# {needed for blocking of a few functions while measuring}
 		Intern,Play 0
 		# {remember the last used mic; needed for live update}
@@ -93,9 +91,6 @@ namespace eval ::impulse::config {
 		# {Hold an event ID to make live update smooth}
 		Intern,LiveRefresh {}
 		Intern,LiveUpdateCmd {}
-		# {Last generated sweep rate}
-		Intern,SweepRate {}
-		Intern,Unsaved 0
 	}
 	# delete comments from array
 	array unset config {#}
@@ -200,7 +195,12 @@ namespace eval ::impulse::config {
 		close $fp
 	}
 
+	proc trace {op cmd args} {
+		foreach var $args {
+			::trace add variable ::impulse::config::config($var) $op $cmd
+		}	
+	}
 
-	namespace ensemble create -subcommands [list create configure append cget delete load save]
+	namespace ensemble create -subcommands [list create configure append cget delete load save trace]
 }
 

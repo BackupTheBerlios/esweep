@@ -11,12 +11,14 @@ source ./impulse_math.tcl
 
 # storage for various variables
 namespace eval ::impulse::variables {
-	variable sig
-	variable sys
-	variable ref
+	variable sig {}
+	variable sys {}
+	variable ref {}
 	variable sweep_rate
+	variable sc
 	variable mic_distance
 	variable refresh
+	variable unsaved
 }
 
 # This program measures the impulse response of a system. 
@@ -45,7 +47,6 @@ proc bindings {win} {
 	bind $win <Escape> [list ::impulse::config configure Intern,numBuffer {}]
 
 	# program control commands
-	bind $win <colon> [list enterCommandLine]
 
 	# zooming
 	bind $win <z> [list zoom in]
@@ -54,7 +55,7 @@ proc bindings {win} {
 
 proc deleteBindings {win} {
 	foreach seq [bind $win] {
-		bind $win $seq bell
+		bind $win $seq {}
 	}
 }
 
@@ -172,6 +173,7 @@ proc measure {} {
 	}
 	# do the measurement
 	deleteBindings .
+	lockCmdLine
 	bind . <Escape> {::impulse::audio stop}
 	::impulse::audio open [::impulse::config cget Audio,Device] $samplerate $bitdepth $out_channel $in_channel
 	lassign [::impulse::audio measure $out_channel $in_channel $ref_channel $level \
@@ -179,20 +181,25 @@ proc measure {} {
 		[::impulse::config cget Signal,Spectrum] [::impulse::config cget Signal,Locut] \
 		[::impulse::config cget Signal,Hicut]] ::impulse::variables::sig ::impulse::variables::sys ::impulse::variables::ref ::impulse::variables::sweep_rate
 	# restore the bindings
+	unlockCmdLine
 	bindings .
 	::impulse::audio close
 	# scale input signal
-	::impulse::math scale $::impulse::variables::sys [::impulse::config cget Processing,Mode] \
+	set ::impulse::variables:sc [::impulse::math scale $::impulse::variables::sys [::impulse::config cget Processing,Mode] \
 			[::impulse::config cget Processing,Scaling] \
 			[::impulse::config cget Processing,Scaling,Reference] \
-			$out_sense $in_sense $ref_sense $mic_sense
+			$out_sense $in_sense $ref_sense $mic_sense]
 
+			updateDisplay
+}
+
+proc updateDisplay {args} {
 	calcIR
 	calcFR
 }
 
 proc calcIR {} {
-	set samplerate [esweep::samplerate -obj $::impulse::variables::sys]
+	if {[catch {set samplerate [esweep::samplerate -obj $::impulse::variables::sys]}]} return
 	# set up display
 	if {[::impulse::config cget Processing,Mode] eq {Dual}} {
 		set ::TkEsweepXYPlot::plots(IR,Config,Y1,Label) \
@@ -226,7 +233,7 @@ proc calcIR {} {
 		# automatic gate adjustement, 5 ms pre delay
 		set gate_start [expr {[::impulse::math samplesToMs [esweep::maxPos -obj $ir] $samplerate]-5}]
 	} else {
-		set gate_start [expr {int(1000*$::impulse::variables::distance/343.0)}]
+		set gate_start [expr {int(1000*$::impulse::variables::mic_distance/343.0)}]
 	}
 	set gate_start [expr {$gate_start < 0 ? 0 : $gate_start}]
 
@@ -238,6 +245,7 @@ proc calcIR {} {
 	} else {
 		::TkEsweepXYPlot::addTrace IR 0 IR $ir
 	}
+	set ::impulse::variables::unsaved 1
 
 	::TkEsweepXYPlot::plot IR
 }
@@ -309,35 +317,6 @@ proc calcHD {} {
 	}
 }
 
-proc enterCommandLine {} {
-	if {[::impulse::config cget Intern,Play]} return
-	.cmdLine configure -state normal
-	.cmdLine delete 0 end
-	.cmdLine insert 0 :
-	focus .cmdLine
-	deleteBindings .
-}
-
-proc writeToCmdLine {txt args} {
-	# do not allow entering the commandline while messaging
-	bind . <colon> {}
-	.cmdLine configure -state normal
-	foreach {opt value} $args {
-		switch $opt {
-			-fg {.cmdLine configure -fg $value}
-			-bg {.cmdLine configure -readonlybackground $value}
-			default {}
-		}
-	}
-	.cmdLine delete 0 end
-	.cmdLine insert 0 $txt
-	.cmdLine configure -state readonly
-	update
-	# allow entering commandline after 1 second
-	after 1000 .cmdLine configure -readonlybackground grey
-	after 1000 bind . <colon> [list enterCommandLine]
-}
-
 ###########################
 # The application windows #
 ###########################
@@ -356,7 +335,7 @@ proc appWindows {} {
 
 	canvas .w.fr -bg white
 	canvas .w.ir -bg white
-	pack .w.ir .w.fr -expand yes -fill both -side top
+	:show IR FR
 
 	pack .w -side top -expand yes -fill both
 	pack .cmdLine -side bottom -fill x
@@ -423,7 +402,7 @@ proc liveUpdate {args} {
 	::impulse::config configure Intern,LiveRefresh [after 100 calcFR]
 }
 
-# zoom in and out of the ::impulse::config response
+# zoom in and out of the impulse response
 proc zoom {what} {
 	if {$what eq {in}} {
 		# get the cursor positions
@@ -438,6 +417,47 @@ proc zoom {what} {
 		set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [::impulse::config cget Processing,Gate]
 		::TkEsweepXYPlot::plot IR
 	}
+}
+
+
+#########################
+# Command Line handling #
+#########################
+proc unlockCmdLine {} {
+	.cmdLine configure -readonlybackground grey -state disabled
+	bind . <colon> [list enterCommandLine]
+}
+
+proc lockCmdLine {} {
+	bind . <colon> {}
+	.cmdLine configure -state normal
+	.cmdLine delete 0 end
+}
+
+proc writeToCmdLine {txt args} {
+	# do not allow entering the commandline while messaging
+	lockCmdLine
+	foreach {opt value} $args {
+		switch $opt {
+			-fg {.cmdLine configure -fg $value}
+			-bg {.cmdLine configure -readonlybackground $value}
+			default {}
+		}
+	}
+	.cmdLine insert 0 $txt
+	.cmdLine configure -state readonly
+	update
+	# allow entering commandline after 1 second
+	after 1000 unlockCmdLine
+}
+
+proc enterCommandLine {} {
+	if {[::impulse::config cget Intern,Play]} return
+	lockCmdLine
+	# while writing to the command line disable bindings
+	deleteBindings .
+	.cmdLine insert 0 :
+	focus .cmdLine
 }
 
 # Execute the command on the command line
@@ -456,16 +476,13 @@ proc execCmdLine {} {
 		writeToCmdLine "Command $cmd failed" -bg red
 
 	}
-	after 1000 .cmdLine configure -state disabled -bg white -fg black
+	# allow bindings
 	bindings .
+	after 1000 unlockCmdLine
 	if {[::impulse::config cget Debug]} {
 		return -options $errOpts $errMsg 
 	}
 }
-
-#######################
-# Command Line proc's #
-#######################
 
 proc :set {args} {
 	if {[llength $args] > 1} {
@@ -481,12 +498,40 @@ proc :set {args} {
 }
 
 proc :show {args} {
-	writeToCmdLine {No other analyzing supported} -bg yellow
+	foreach w $args {
+		switch $w {
+			IR {
+				pack .w.ir -expand yes -fill both -side top
+			}
+			FR {
+				pack .w.fr -expand yes -fill both -side bottom
+			}
+			default {
+				writeToCmdLine {No other analyzing supported} -bg yellow
+			}
+		}
+	}
+
+	return 0
+}
+
+proc :hide {args} {
+	switch [lindex $args 0] {
+		IR {
+			pack forget .w.ir
+		}
+		FR {
+			pack forget .w.fr
+		}
+		default {
+			writeToCmdLine {Window not known} -bg yellow
+		}
+	}
 	return 0
 }
 
 proc :w {{filename ""}} {
-	if {[::impulse::config cget Intern,Filename] == ""} {
+	if {::impulse::variables::filename == ""} {
 		if {$filename == ""} {
 			if {[set filename [tk_getSaveFile]] == ""} {
 				writeToCmdLine "Save cancelled" -bg yellow
@@ -494,13 +539,13 @@ proc :w {{filename ""}} {
 			}
 		}	
 	} else {
-		set filename [::impulse::config cget Intern,Filename]
+		set fn ::impulse::variables::filename
 	}
 	# save file
-	esweep::save -filename $filename -obj [::TkEsweepXYPlot::getTrace IR 0]
-	writeToCmdLine "Saved to $filename" -bg green
-	::impulse::config configure Intern,Unsaved 0
-	::impulse::config configure Intern,Filename $filename
+	esweep::save -filename $fn -obj [::TkEsweepXYPlot::getTrace IR 0]
+	writeToCmdLine "Saved to $fn" -bg green
+	set ::impulse::variables::unsaved 0
+	set ::impulse::variables::filename $fn
 	return 0
 }
 
@@ -520,7 +565,7 @@ proc :wq! {{filename ""}} {
 
 # exit, but check for unsaved changes
 proc :q {} {
-	if {[::impulse::config cget Intern,Unsaved]} {
+	if {[::impulse::variables::unsaved]} {
 		writeToCmdLine "Unsaved changes. Use :q! to override" -bg red
 		return 1
 	}
@@ -558,3 +603,7 @@ proc :export {what {filename ""}} {
 #console show
 appWindows
 bindings .
+unlockCmdLine
+
+# install traces
+::impulse::config::trace write updateDisplay Processing,Scaling Processing,Scaling,Reference Processing,Mode

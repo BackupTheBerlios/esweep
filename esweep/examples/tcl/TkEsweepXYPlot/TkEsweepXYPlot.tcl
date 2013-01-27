@@ -33,12 +33,18 @@ namespace eval TkEsweepXYPlot {
 
 		X,Min 0
 		X,Max 1
+		X,Range {}
+		X,Bounds {}
 
 		Y1,Min 0
 		Y1,Max 1
+		Y1,Range {}
+		Y1,Bounds {}
 
 		Y2,Min 0
 		Y2,Max 1
+		Y2,Range {}
+		Y2,Bounds {}
 		
 		X,Step 3
 		X,StepDash ""
@@ -612,14 +618,14 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 		if {$plots($plotName,Config,Y1,Log)!="yes"} {
 			set step [expr {double($y2-$y1)/$plots($plotName,Config,Y1,Step)}]
 			set mStep [expr {1.0*$step/$plots($plotName,Config,Y1,MStep)}]
-			set tickStep [expr {double($plots($plotName,Config,Y1,Max)-$plots($plotName,Config,Y1,Min))/$step}]
+			set tickStep [expr {double($plots($plotName,Config,Y1,Max)-$plots($plotName,Config,Y1,Min))/$plots($plotName,Config,Y1,Step)}]
 			for {set i 1; set y $y2} {$i<$plots($plotName,Config,Y1,Step)} {incr i} {
 				# minor steps
 				for {set j 1; set my [expr {int(0.5+$y-$mStep)}]} {$j < $plots($plotName,Config,Y1,MStep)} {incr j} {
 					$c create line $x1 $my $x2 $my -tag $tag -dash $plots($plotName,Config,Y1,MStepDash)
 					set my [expr {int(0.5+$my-$mStep)}] 
 				}
-				set y [expr {int(0.5+$y2-$i*$plots($plotName,Config,Y1,Step))}]
+				set y [expr {int(0.5+$y2-$i*$step)}]
 				$c create line $x1 $y $x2 $y -tag $tag
 				# draw scale
 				set tick [format $fmtStr [expr {$i*$tickStep+$plots($plotName,Config,Y1,Min)}]]
@@ -1139,19 +1145,16 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale {all}}} {
 			}
 		}
 
-		if {[info exists plots($plotName,Config,$s,Range)]} {
+		if {$plots($plotName,Config,$s,Range) ne {}} {
 			# adjust max so that Y?,Steps fit smoothly in the graph
 			set div [expr {$plots($plotName,Config,$s,Range)/$plots($plotName,Config,$s,Step)}]
 			set max [expr {ceil($max/$div)*$div}]
 			set min [expr {$max-$plots($plotName,Config,$s,Range)}]
 		} else {
-			if {[info exists plots($plotName,Config,$s,Bounds)]} {
+			if {$plots($plotName,Config,$s,Bounds) ne {}} {
 				if {$min < [lindex $plots($plotName,Config,$s,Bounds) 0]} {
 					set min [lindex $plots($plotName,Config,$s,Bounds) 0]
 				}
-			}
-	
-			if {[info exists plots($plotName,Config,$s,Bounds)]} {
 				if {$max > [lindex $plots($plotName,Config,$s,Bounds) 1]} {
 					set max [lindex $plots($plotName,Config,$s,Bounds) 1]
 				}
@@ -1361,7 +1364,7 @@ if {[catch {package require Img}]==0} {
 		catch {after cancel $events(MouseHoverDelete)}
 		catch {$c delete "$plotName,hover"}
 
-		update idletasks
+		update 
 		set im [image create photo ::TkEsweepXYPlot::$plotName,img -data $c]
 		
 		return $im

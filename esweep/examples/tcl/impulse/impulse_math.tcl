@@ -18,7 +18,7 @@ namespace eval ::impulse::math {
 				return -code error "Unknown measurement mode $meas_mode"
 		}
 		esweep::expr sig * $sc
-		return $sig
+		return $sc
 	}
 
 	proc calcIR {meas_mode sig sys ref} {
