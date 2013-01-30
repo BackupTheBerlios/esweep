@@ -1,0 +1,25 @@
+BASE=../../..
+SRC=$(BASE)/src
+GCC=gcc
+CFLAGS=-Wall -I$(SRC) -DHAVE_UNISTD_H -D_BYTE_ORDER=_LITTLE_ENDIAN -msse -mfpmath=sse -DNDEBUG_PRINT -DPORTAUDIO -I$(SRC)/portaudio -DESWEEP_ERROR_NOEXIT -std=c99
+# The code breaks on windows with -O2, but -O3 works...
+OPTS=-O1
+LFLAGS=-L./
+LIBS=-lportaudio-2
+
+CSRC  =  $(SRC)/esweep_priv.c $(SRC)/esweep_base.c $(SRC)/esweep_mem.c $(SRC)/esweep_audio.c $(SRC)/audio_pa.c $(SRC)/audio_file.c esweep_vee_wrap.c
+
+OBJS =$(CSRC:.c=.o)
+DLL = libesweepvee.dll
+
+
+$(DLL): $(OBJS)
+	$(GCC) -shared -o $@ $^ $(LFLAGS) $(LIBS)
+
+%.o: %.c
+	$(GCC) $(CFLAGS) $(OPTS) -c $< -o $@
+
+clean:
+	rm -f $(OBJS) $(DLL)
+
+.PHONY: clean
