@@ -1,17 +1,17 @@
 load ../../../libesweeptcl.so esweep
 
 array set config {
-	Audio,Device 		audio:/dev/audio0
+	Audio,Device 		audio:/dev/audio1
 	Audio,Samplerate 	44100
 	Audio,Output,Channel 	1
 	Audio,Output,Max	0.9
 	Audio,Input,Channel 	1
-	Audio,Input,Cal		0.29
+	Audio,Input,Cal		0.087
 	Audio,Input,Cal,Base	2e-5
 
-	Measurement,F1		200
-	Measurement,F2		3000
-	Measurement,Step	3
+	Measurement,F1		50
+	Measurement,F2		10000
+	Measurement,Step	6
 	Measurement,Harmonics	{2 3 5}
 	Measurement,IntraBurstDelay 200
 	Measurement,MaxWait	2000
