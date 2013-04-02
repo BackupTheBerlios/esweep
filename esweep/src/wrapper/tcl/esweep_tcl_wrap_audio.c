@@ -33,25 +33,25 @@
 #include "esweep_tcl_wrap.h"
 
 int esweepAudioOpen(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
-	char *device=NULL; 
+	char *device=NULL;
 	esweep_audio *handle=NULL;
-	TclEsweepAudio *ea; 
-	Tcl_Obj *ret; 
+	TclEsweepAudio *ea;
+	Tcl_Obj *ret;
 
 	const char *opts[] = {"-device", NULL};
 	int optMask[] = {1, 1, 0}; // necessary options
 	enum optIdx {devIdx, sizeIdx};
 	int obji;
-	int index; 
+	int index;
 
-	CHECK_NUM_ARGS(objc == 3, "-device value"); 
+	CHECK_NUM_ARGS(objc == 3, "-device value");
 
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
-			case devIdx: 
+			case devIdx:
 				if ((device=Tcl_GetString(objv[obji+1]))==NULL) {
 					/* almost impossible */
 					Tcl_SetResult(interp, "option -device invalid", TCL_STATIC);
@@ -59,22 +59,22 @@ int esweepAudioOpen(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj
 				}
 				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
-	CHECK_MISSING_OPTIONS(opts, optMask, index); 
+	CHECK_MISSING_OPTIONS(opts, optMask, index);
 
-	ESWEEP_TCL_ASSERT((handle=esweep_audioOpen(device)) != NULL); 
+	ESWEEP_TCL_ASSERT((handle=esweep_audioOpen(device)) != NULL);
 
 	ESWEEP_MALLOC(ea, 1, sizeof(TclEsweepAudio), TCL_ERROR);
-	ea->refCount=1; 
-	ea->handle=handle; 
-	ret=Tcl_NewObj(); 
-	ret->internalRep.otherValuePtr=ea; 
-	ret->typePtr = (Tcl_ObjType*) &tclEsweepAudioType; 
+	ea->refCount=1;
+	ea->handle=handle;
+	ret=Tcl_NewObj();
+	ret->internalRep.otherValuePtr=ea;
+	ret->typePtr = (Tcl_ObjType*) &tclEsweepAudioType;
 	/* The objects string representation is simply the pointer address */
 	//ret->bytes=Tcl_Alloc(256);
-	//snprintf(ret->bytes, 256, "%p", handle); 
-	Tcl_InvalidateStringRep(ret); 
+	//snprintf(ret->bytes, 256, "%p", handle);
+	Tcl_InvalidateStringRep(ret);
 	Tcl_SetObjResult(interp, ret);
 	return TCL_OK;
 }
@@ -85,35 +85,35 @@ int esweepAudioQuery(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Ob
 	int optMask[] = {1, 1, 0}; // necessary options
 	enum optIdx {handleIdx, paramIdx};
 	int obji;
-	int index; 
-	int result=-1; 
-	char *param=NULL; 
+	int index;
+	int result=-1;
+	char *param=NULL;
 
-	CHECK_NUM_ARGS(objc == 5, "-handle esweepAudioHandle -param value"); 
+	CHECK_NUM_ARGS(objc == 5, "-handle esweepAudioHandle -param value");
 
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
-			case handleIdx: 
-				CHECK_ESWEEP_AUDIO(obji+1, handle); 
+			case handleIdx:
+				CHECK_ESWEEP_AUDIO(obji+1, handle);
 				break;
-			case paramIdx: 
+			case paramIdx:
 				if ((param=Tcl_GetString(objv[obji+1]))==NULL) {
 					/* almost impossible */
 					Tcl_SetResult(interp, "option -query invalid", TCL_STATIC);
 					return TCL_ERROR;
 				}
-				break; 
+				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
-	CHECK_MISSING_OPTIONS(opts, optMask, index); 
-	
-	ESWEEP_TCL_ASSERT(esweep_audioQuery(handle, param, &result) == ERR_OK); 
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(result)); 
-	return TCL_OK; 
+	CHECK_MISSING_OPTIONS(opts, optMask, index);
+
+	ESWEEP_TCL_ASSERT(esweep_audioQuery(handle, param, &result) == ERR_OK);
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(result));
+	return TCL_OK;
 }
 
 int esweepAudioConfigure(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
@@ -122,247 +122,249 @@ int esweepAudioConfigure(ClientData clientdata, Tcl_Interp *interp, int objc, Tc
 	int optMask[] = {1, 1, 1, 0}; // necessary options
 	enum optIdx {handleIdx, paramIdx, valIdx};
 	int obji;
-	int index; 
-	int value=-1; 
-	char *param=NULL; 
+	int index;
+	int value=-1;
+	char *param=NULL;
 
-	CHECK_NUM_ARGS(objc == 7, "-handle esweepAudioHandle -param value -value value"); 
+	CHECK_NUM_ARGS(objc == 7, "-handle esweepAudioHandle -param value -value value");
 
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
-			case handleIdx: 
-				CHECK_ESWEEP_AUDIO(obji+1, handle); 
+			case handleIdx:
+				CHECK_ESWEEP_AUDIO(obji+1, handle);
 				break;
-			case paramIdx: 
+			case paramIdx:
 				if ((param=Tcl_GetString(objv[obji+1]))==NULL) {
 					/* almost impossible */
 					Tcl_SetResult(interp, "option -query invalid", TCL_STATIC);
 					return TCL_ERROR;
 				}
-				break; 
-			case valIdx: 
+				break;
+			case valIdx:
 				if (Tcl_GetIntFromObj(NULL, objv[obji+1], &value)!=TCL_OK) {
 					Tcl_SetResult(interp, "option -value invalid", TCL_STATIC);
 					return TCL_ERROR;
 				}
-				break; 
+				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
-	CHECK_MISSING_OPTIONS(opts, optMask, index); 
-	
-	ESWEEP_TCL_ASSERT(esweep_audioConfigure(handle, param, value) == ERR_OK); 
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(value)); 
-	return TCL_OK; 
+	CHECK_MISSING_OPTIONS(opts, optMask, index);
+
+	ESWEEP_TCL_ASSERT(esweep_audioConfigure(handle, param, value) == ERR_OK);
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(value));
+	return TCL_OK;
 }
 
 int esweepAudioSync(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
 	esweep_audio *handle=NULL;
-	Tcl_Obj *tclObj=NULL; 
+	Tcl_Obj *tclObj=NULL;
 
 	const char *opts[] = {"-handle", NULL};
 	int optMask[] = {1, 0}; // necessary options
 	enum optIdx {handleIdx};
 	int obji;
-	int index; 
+	int index;
 
-	CHECK_NUM_ARGS(objc == 3, "-handle esweepAudioHandle"); 
+	CHECK_NUM_ARGS(objc == 3, "-handle esweepAudioHandle");
 
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
-			case handleIdx: 
-				CHECK_ESWEEP_AUDIO(obji+1, handle); 
-				tclObj=objv[obji+1];
-				break;
+			case handleIdx:
+				CHECK_ESWEEP_AUDIO(obji+1, handle);
+        tclObj=objv[obji+1];
+        break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
-	CHECK_MISSING_OPTIONS(opts, optMask, index); 
-	
-	ESWEEP_TCL_ASSERT(esweep_audioSync(handle) == ERR_OK); 
-	Tcl_SetObjResult(interp, tclObj); 
-	return TCL_OK; 
+	CHECK_MISSING_OPTIONS(opts, optMask, index);
+
+	ESWEEP_TCL_ASSERT(esweep_audioSync(handle) == ERR_OK);
+	Tcl_SetObjResult(interp, tclObj);
+	return TCL_OK;
 }
 
 int esweepAudioPause(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
 	esweep_audio *handle=NULL;
-	Tcl_Obj *tclObj=NULL; 
+	Tcl_Obj *tclObj=NULL;
 	const char *opts[] = {"-handle", NULL};
 	int optMask[] = {1, 0}; // necessary options
 	enum optIdx {handleIdx};
 	int obji;
-	int index; 
+	int index;
 
-	CHECK_NUM_ARGS(objc == 3, "-handle esweepAudioHandle"); 
+	CHECK_NUM_ARGS(objc == 3, "-handle esweepAudioHandle");
 
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
-			case handleIdx: 
-				CHECK_ESWEEP_AUDIO(obji+1, handle); 
+			case handleIdx:
+				CHECK_ESWEEP_AUDIO(obji+1, handle);
 				tclObj=objv[obji+1];
 				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
-	CHECK_MISSING_OPTIONS(opts, optMask, index); 
-	
-	ESWEEP_TCL_ASSERT(esweep_audioPause(handle) == ERR_OK); 
-	Tcl_SetObjResult(interp, tclObj); 
-	return TCL_OK; 
+	CHECK_MISSING_OPTIONS(opts, optMask, index);
+
+	ESWEEP_TCL_ASSERT(esweep_audioPause(handle) == ERR_OK);
+	Tcl_SetObjResult(interp, tclObj);
+	return TCL_OK;
 }
 
 int esweepAudioOut(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
 	esweep_audio *handle=NULL;
-	esweep_object **out=NULL; 
-	Tcl_Obj *tclObj; 
+	esweep_object **out=NULL;
+	Tcl_Obj *tclObj;
 	const char *opts[] = {"-handle", "-signals", "-offset", NULL};
 	int optMask[] = {1, 1, 0, 0}; // necessary options
 	enum optIdx {handleIdx, signalsIdx, offsetIdx};
 	int obji;
-	int index, i; 
-	int offset=0; 
-	int channels=0; 
+	int index, i;
+	int offset=0;
+	int channels=0;
 
-	CHECK_NUM_ARGS(objc == 5 || objc == 7, "-handle esweepAudioHandle -signals list ?-offset value?"); 
+	CHECK_NUM_ARGS(objc == 5 || objc == 7, "-handle esweepAudioHandle -signals list ?-offset value?");
 
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
-			case handleIdx: 
-				CHECK_ESWEEP_AUDIO(obji+1, handle); 
+			case handleIdx:
+				CHECK_ESWEEP_AUDIO(obji+1, handle);
 				break;
 			case offsetIdx:
 				if (Tcl_GetIntFromObj(NULL, objv[obji+1], &offset)!=TCL_OK) {
 					Tcl_SetResult(interp, "option -offset invalid", TCL_STATIC);
 					return TCL_ERROR;
 				}
-				break; 
+				break;
 			case signalsIdx:
 				if (Tcl_ListObjLength(NULL, objv[obji+1], &channels)!=TCL_OK) {
 					Tcl_SetResult(interp, "parameter of option -signals is not a list", TCL_STATIC);
-					return TCL_ERROR; 
+					return TCL_ERROR;
 				}
 				if (channels <= 0) {
-					Tcl_SetResult(interp, "no output signals defined", TCL_STATIC); 
-					return TCL_ERROR; 
+					Tcl_SetResult(interp, "no output signals defined", TCL_STATIC);
+					return TCL_ERROR;
 				}
-				ESWEEP_MALLOC(out, channels, sizeof(*out), TCL_ERROR); 
+				ESWEEP_MALLOC(out, channels, sizeof(*out), TCL_ERROR);
 				for (i=0; i < channels; i++) {
-					Tcl_ListObjIndex(interp, objv[obji+1], i, &tclObj); 
-					if (tclObj->typePtr != &tclEsweepObjType) { 
-						Tcl_SetObjResult(interp, Tcl_NewStringObj("List contains non-esweep objects", -1)); 
-						return TCL_ERROR; 
+					Tcl_ListObjIndex(interp, objv[obji+1], i, &tclObj);
+					if (tclObj->typePtr != &tclEsweepObjType) {
+						Tcl_SetObjResult(interp, Tcl_NewStringObj("List contains non-esweep objects", -1));
+						return TCL_ERROR;
 					} else {out[i]=(esweep_object*) tclObj->internalRep.otherValuePtr;}
 				}
-				break; 
+				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
-	CHECK_MISSING_OPTIONS(opts, optMask, index); 
-	
-	ESWEEP_TCL_ASSERT(esweep_audioOut(handle, out, channels, &offset) == ERR_OK); 
+	CHECK_MISSING_OPTIONS(opts, optMask, index);
+
+	ESWEEP_TCL_ASSERT(esweep_audioOut(handle, out, channels, &offset) == ERR_OK);
 	free(out);
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(offset)); 
-	return TCL_OK; 
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(offset));
+	return TCL_OK;
 }
 
 int esweepAudioIn(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
 	esweep_audio *handle=NULL;
-	esweep_object **in=NULL; 
-	Tcl_Obj *tclObj; 
+	esweep_object **in=NULL;
+	Tcl_Obj *tclObj;
 	const char *opts[] = {"-handle", "-signals", "-offset", NULL};
 	int optMask[] = {1, 1, 0, 0}; // necessary options
 	enum optIdx {handleIdx, signalsIdx, offsetIdx};
 	int obji;
-	int index, i; 
-	int offset=0; 
-	int channels=0; 
+	int index, i;
+	int offset=0;
+	int channels=0;
 
-	CHECK_NUM_ARGS(objc == 5 || objc == 7, "-handle esweepAudioHandle -signals list ?-offset value?"); 
+	CHECK_NUM_ARGS(objc == 5 || objc == 7, "-handle esweepAudioHandle -signals list ?-offset value?");
 
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
-			case handleIdx: 
-				CHECK_ESWEEP_AUDIO(obji+1, handle); 
+			case handleIdx:
+				CHECK_ESWEEP_AUDIO(obji+1, handle);
 				break;
 			case offsetIdx:
 				if (Tcl_GetIntFromObj(NULL, objv[obji+1], &offset)!=TCL_OK) {
 					Tcl_SetResult(interp, "option -offset invalid", TCL_STATIC);
 					return TCL_ERROR;
 				}
-				break; 
+				break;
 			case signalsIdx:
 				if (Tcl_ListObjLength(NULL, objv[obji+1], &channels)!=TCL_OK) {
 					Tcl_SetResult(interp, "parameter of option -signals is not a list", TCL_STATIC);
-					return TCL_ERROR; 
+					return TCL_ERROR;
 				}
 				if (channels <= 0) {
-					Tcl_SetResult(interp, "no input signals defined", TCL_STATIC); 
-					return TCL_ERROR; 
+					Tcl_SetResult(interp, "no input signals defined", TCL_STATIC);
+					return TCL_ERROR;
 				}
-				ESWEEP_MALLOC(in, channels, sizeof(*in), TCL_ERROR); 
+				ESWEEP_MALLOC(in, channels, sizeof(*in), TCL_ERROR);
 				for (i=0; i < channels; i++) {
-					Tcl_ListObjIndex(interp, objv[obji+1], i, &tclObj); 
-					if (tclObj->typePtr != &tclEsweepObjType) { 
-						Tcl_SetObjResult(interp, Tcl_NewStringObj("List contains non-esweep objects", -1)); 
-						return TCL_ERROR; 
+					Tcl_ListObjIndex(interp, objv[obji+1], i, &tclObj);
+					if (tclObj->typePtr != &tclEsweepObjType) {
+						Tcl_SetObjResult(interp, Tcl_NewStringObj("List contains non-esweep objects", -1));
+						return TCL_ERROR;
 					} else {in[i]=(esweep_object*) tclObj->internalRep.otherValuePtr;}
 				}
-				break; 
+				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
-	CHECK_MISSING_OPTIONS(opts, optMask, index); 
-	
-	ESWEEP_TCL_ASSERT(esweep_audioIn(handle, in, channels, &offset) == ERR_OK); 
-	free(in); 
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(offset)); 
-	return TCL_OK; 
+	CHECK_MISSING_OPTIONS(opts, optMask, index);
+
+	ESWEEP_TCL_ASSERT(esweep_audioIn(handle, in, channels, &offset) == ERR_OK);
+	free(in);
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(offset));
+	return TCL_OK;
 }
 
 int esweepAudioClose(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
-	esweep_audio *handle=NULL;
-	TclEsweepAudio *ea; 
-	Tcl_Obj *tclObj=NULL; 
+	TclEsweepAudio *ea;
+	Tcl_Obj *tclObj=NULL;
 	const char *opts[] = {"-handle", NULL};
 	int optMask[] = {1, 0}; // necessary options
 	enum optIdx {handleIdx};
 	int obji;
-	int index; 
+	int index;
 
-	CHECK_NUM_ARGS(objc == 3, "-handle esweepAudioHandle"); 
+	CHECK_NUM_ARGS(objc == 3, "-handle esweepAudioHandle");
 
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
-			case handleIdx: 
-				CHECK_ESWEEP_AUDIO(obji+1, handle); 
+			case handleIdx:
+        if (objv[obji+1]->typePtr != &tclEsweepAudioType) {
+          Tcl_SetObjResult(interp, Tcl_ObjPrintf("Parameter %i not an esweep audio object", obji+1));
+          return TCL_ERROR;
+        }
 				tclObj=objv[obji+1];
 				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
-	CHECK_MISSING_OPTIONS(opts, optMask, index); 
-	
-	ea=tclObj->internalRep.otherValuePtr; 
-	TCLESWEEPAUDIO_DECREFCOUNT(ea); 
-	Tcl_SetObjResult(interp, Tcl_NewIntObj(ea->refCount)); 
-	return TCL_OK; 
+	CHECK_MISSING_OPTIONS(opts, optMask, index);
+
+	ea=tclObj->internalRep.otherValuePtr;
+	TCLESWEEPAUDIO_DECREFCOUNT(ea);
+	Tcl_SetObjResult(interp, Tcl_NewIntObj(ea->refCount));
+	return TCL_OK;
 }
 
