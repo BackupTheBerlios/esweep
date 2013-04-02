@@ -68,7 +68,7 @@ extern char errmsg[256];
 		#ifdef ESWEEP_ERROR_NOEXIT
 			#define	ESWEEP_ASSERT(e, ret) if (!(e)) {__esweep_assert2(__FILE__, __LINE__, __func__, #e); return ret;}
 		#else
-			#define	ESWEEP_ASSERT(e, ret) if (!(e)) 
+			#define	ESWEEP_ASSERT(e, ret) if (!(e))
 		#endif
 	#else
 		#ifdef ESWEEP_ERROR_NOEXIT
@@ -112,7 +112,7 @@ int __esweep_assert(const char *file, int line, const char *assertion);
 						    (surf->xsize>0 && surf->ysize>0 \
 							&& surf->x!=NULL && surf->y!=NULL && surf->z!=NULL) || \
 						    (surf->xsize==0 && surf->ysize==0 \
-							&& surf->x==NULL && surf->y==NULL && surf->z==NULL), ret2); 
+							&& surf->x==NULL && surf->y==NULL && surf->z==NULL), ret2);
 /*
  * Check if the two objects a and b have the same mapping (i. e. samplerate)
  */
@@ -154,7 +154,7 @@ int __esweep_assert(const char *file, int line, const char *assertion);
 #define ESWEEP_MALLOC_SURFACE(x, y, z, xsize, ysize, zsize, ret) \
 	ESWEEP_MALLOC(x, xsize, sizeof(Real), ret); \
 	ESWEEP_MALLOC(y, ysize, sizeof(Real), ret); \
-	ESWEEP_MALLOC(z, zsize, sizeof(Real), ret); 
+	ESWEEP_MALLOC(z, zsize, sizeof(Real), ret);
 
 #ifndef NDEBUG_PRINT
 #define ESWEEP_DEBUG_PRINT(msg, ...) fprintf(stderr, "%s: "msg, __func__, __VA_ARGS__);
@@ -171,7 +171,7 @@ int __esweep_assert(const char *file, int line, const char *assertion);
 	typedef double Real;
 #endif /* REAL32 */
 
-#ifndef u_int 
+#ifndef u_int
        #define u_int unsigned int
 #endif
 
@@ -191,6 +191,7 @@ int __esweep_assert(const char *file, int line, const char *assertion);
 #ifndef u_int64_t
 		typedef unsigned __int64 u_int64_t; /* MinGW env */
 #endif
+#ifndef _STDINT_H
 #ifndef int16_t
 		typedef __int16 int16_t; /* MinGW env */
 #endif
@@ -202,14 +203,21 @@ int __esweep_assert(const char *file, int line, const char *assertion);
 #ifndef int64_t
 		typedef __int64 int64_t; /* MinGW env */
 #endif
+#endif /* STDINT_H */
 #endif /* BSD_VISIBLE */
 
 #if !(__BSD_VISIBLE || __XPG_VISIBLE >= 400)
-		#define STRCPY(dst, src, size) strncpy(dst, src, size); 
-		#define STRCAT(dst, src, size) nstrncat(dst, src, size); 
-#else 	
-		#define STRCPY(dst, src, size) strlcpy(dst, src, size); 
-		#define STRCAT(dst, src, size) strlcat(dst, src, size); 
+		#define STRCPY(dst, src, size) strncpy(dst, src, size);
+		#define STRCAT(dst, src, size) nstrncat(dst, src, size);
+#else
+		#define STRCPY(dst, src, size) strlcpy(dst, src, size);
+		#define STRCAT(dst, src, size) strlcat(dst, src, size);
+#endif
+
+#ifdef _WIN32
+		#define STRLEN(str, size) strlen(str);
+#else
+    #define STRLEN(str, size) strnlen(str, size);
 #endif
 
 
@@ -220,7 +228,7 @@ int __esweep_assert(const char *file, int line, const char *assertion);
 /*
  * see LICENSE
  */
- 
+
 #if !(__BSD_VISIBLE || __XPG_VISIBLE >= 400)
 
 #define _LITTLE_ENDIAN	1234
@@ -254,7 +262,7 @@ int __esweep_assert(const char *file, int line, const char *assertion);
 	    (__swap64gen_x & 0xff000000000000ULL) >> 40 |	 \
 	    (__swap64gen_x & 0xff00000000000000ULL) >> 56);	 \
 })
-		 
+
 #if _BYTE_ORDER == _LITTLE_ENDIAN
 
 #define htobe16(x) __swap16gen(x)
@@ -299,35 +307,35 @@ int __esweep_assert(const char *file, int line, const char *assertion);
 #define ntohs(x) ((u_int16_t)(x))
 #define ntohl(x) ((u_int32_t)(x))
 
-#endif /* _BYTE_ORDER */ 
+#endif /* _BYTE_ORDER */
 #endif /* BSD_VISIBLE */
 
 #ifdef __GNUC__
 	#if (__GNUC__ > 4 && __GNUC_MINOR__ > 2)
 		#define __EXTERN_FUNC__ extern
-	#else 
-		#define __EXTERN_FUNC__ 
-	#endif	
+	#else
+		#define __EXTERN_FUNC__
+	#endif
 #endif
 
-/* specials for FP values 
- * you need to use a union for this to work: 
+/* specials for FP values
+ * you need to use a union for this to work:
  * typedef union {
  *	Real r;
- *	u_int32_t ui32_t; 
- *	u_int64_t ui64_t; 
- * } conv_t; 
- * Then do this: 
- * conv_t conv; 
+ *	u_int32_t ui32_t;
+ *	u_int64_t ui64_t;
+ * } conv_t;
+ * Then do this:
+ * conv_t conv;
  * conv.r = 2f;
- * conv.ui32=htonf(conv.ui32); 
+ * conv.ui32=htonf(conv.ui32);
  * This avoids strict-aliasing warnings
  */
 #if 0
-#define htond(x) htobe64(x); 
-#define ntohd(x) betoh64(x); 
-#define htonf(x) htonl(x); 
-#define ntohf(x) ntohl(x); 
+#define htond(x) htobe64(x);
+#define ntohd(x) betoh64(x);
+#define htonf(x) htonl(x);
+#define ntohf(x) ntohl(x);
 
 #ifdef REAL32
 #define htonr(x) htonf(x)
@@ -385,7 +393,7 @@ typedef struct __esweep_audio {
 	int au_hdl;
 
 	/* Pointer to an implementation defined data structure */
-	char *pData; 
+	char *pData;
 
 	/* These variables map the internal state of the audio device driver */
 	u_int samplerate;
@@ -406,9 +414,9 @@ typedef struct __esweep_audio {
 	 */
 
 	/* bytes / sample */
-	u_int bps; 
+	u_int bps;
 	/* alignment, 1 means aligned to the MSB */
-	u_int msb; 
+	u_int msb;
 
 	/*
 	 * Block sizes in Bytes. This is the size which is actually written to the device.
@@ -426,26 +434,26 @@ typedef struct __esweep_audio {
 	 * Dither values, which are kept through successive calls to
 	 * esweep_audioOut(), independent for each channel
 	 */
-	Real *dither; 
+	Real *dither;
 
 	/* Audio buffer */
 	char *ibuf, *obuf;
 
 	/* file information */
-	u_int32_t file_size; 
-	u_int32_t data_size; 
-	u_int32_t data_block_start; 
+	u_int32_t file_size;
+	u_int32_t data_size;
+	u_int32_t data_block_start;
 
 	/* callback function pointers, set by the corresponding open function*/
-	audio_query_ptr audio_query; 
-	audio_configure_ptr audio_configure; 
-	audio_sync_ptr audio_sync; 
-	audio_pause_ptr audio_pause; 
-	audio_seek_ptr audio_seek; 
-	audio_out_ptr audio_out; 
-	audio_in_ptr audio_in; 
-	audio_close_ptr audio_close; 
-} esweep_audio; 
+	audio_query_ptr audio_query;
+	audio_configure_ptr audio_configure;
+	audio_sync_ptr audio_sync;
+	audio_pause_ptr audio_pause;
+	audio_seek_ptr audio_seek;
+	audio_out_ptr audio_out;
+	audio_in_ptr audio_in;
+	audio_close_ptr audio_close;
+} esweep_audio;
 
 typedef struct __Complex {
 	Real real;
@@ -458,9 +466,9 @@ typedef struct __Polar {
 	Real arg;
 } Polar;
 
-/* struct Surface 
+/* struct Surface
  * x: columns, y: rows
- * get the element of z in the i'th column and j'th row: 
+ * get the element of z in the i'th column and j'th row:
  * z[i+j*xsize]
  * */
 typedef struct __Surface {
@@ -493,25 +501,25 @@ __EXTERN_FUNC__ void c2p(Polar *output, Complex *input, int input_size); /* Comp
 						r2c(cpx, (Wave*) obj->data, obj->size); \
 					 	free(obj->data); \
 						obj->type=COMPLEX; \
-						obj->data=cpx; 
+						obj->data=cpx;
 
 #define ESWEEP_CONV_WAVE2POLAR(obj, polar) 	ESWEEP_MALLOC(polar, obj->size, sizeof(Polar), ERR_MALLOC); \
 						r2p(polar, (Wave*) obj->data, obj->size); \
 					 	free(obj->data); \
 						obj->type=POLAR; \
-						obj->data=polar; 
+						obj->data=polar;
 
 /* Math macros */
 
 /* test for and correct floating point exceptions */
-__EXTERN_FUNC__ int correctFpException(esweep_object* obj); 
+__EXTERN_FUNC__ int correctFpException(esweep_object* obj);
 
 /*
  * Math function definitions for single or double FP arithmetic
  */
 
 #ifndef M_PI
-	#define M_PI 3.14159265358979323846264338327	
+	#define M_PI 3.14159265358979323846264338327
 #endif
 
 #ifndef M_PI_2
@@ -551,38 +559,38 @@ __EXTERN_FUNC__ int correctFpException(esweep_object* obj);
  *********************/
 
 /* add real number b to complex number a; result is in a */
-#define ESWEEP_MATH_CR_ADD(a, b) a.real=a.real + b; 
+#define ESWEEP_MATH_CR_ADD(a, b) a.real=a.real + b;
 /* subtract real number b from complex number a; result is in a */
-#define ESWEEP_MATH_CR_SUB(a, b) a.real=a.real - b; 
+#define ESWEEP_MATH_CR_SUB(a, b) a.real=a.real - b;
 /* multiply complex number a with real number b; result is in a */
-#define ESWEEP_MATH_CR_MUL(a, b) a.imag=a.imag * b; a.real=a.real * b; 
+#define ESWEEP_MATH_CR_MUL(a, b) a.imag=a.imag * b; a.real=a.real * b;
 /* divide complex number a by real number b; result is in a */
-#define ESWEEP_MATH_CR_DIV(a, b) a.real=a.real / b; a.imag=a.imag / b; 
+#define ESWEEP_MATH_CR_DIV(a, b) a.real=a.real / b; a.imag=a.imag / b;
 
 /************************
  * Complex with Complex *
  ************************/
 
 /* add complex number b to complex number a; result is in a */
-#define ESWEEP_MATH_CC_ADD(a, b) a.real=a.real + b.real; a.imag=a.imag + b.imag; 
+#define ESWEEP_MATH_CC_ADD(a, b) a.real=a.real + b.real; a.imag=a.imag + b.imag;
 /* subtract complex number b from complex number a; result is complex and in out */
-#define ESWEEP_MATH_CC_SUB(a, b) a.real=a.real - b.real; a.imag=a.imag - b.imag; 
+#define ESWEEP_MATH_CC_SUB(a, b) a.real=a.real - b.real; a.imag=a.imag - b.imag;
 /* multiply complex number a with complex number b; result is in a; needs a temporary real storage */
 #define ESWEEP_MATH_CC_MUL(a, b) tmp=a.real * b.real - a.imag * b.imag; a.imag=a.imag * b.real + a.real * b.imag; a.real=tmp;
 /* divide complex number a by complex number b; result is complex and in out; needs two temporary real storages (denom, tmp)*/
 #define ESWEEP_MATH_CC_DIV(a, b) denom=b.real * b.real - b.imag * b.imag; \
 						tmp=(a.real * b.real + a.imag * b.imag) / denom; \
 						a.imag=(a.imag * b.real - a.real * b.imag) / denom; \
-						a.real=tmp; 
+						a.real=tmp;
 
 /************************
  * Complex with Polar *
  ************************/
 
 /* add polar number b to complex number a; result is in a */
-#define ESWEEP_MATH_CP_ADD(a, b) a.real=a.real + b.abs*cos(b.arg); a.imag=a.imag + b.abs*sin(b.arg); 
+#define ESWEEP_MATH_CP_ADD(a, b) a.real=a.real + b.abs*cos(b.arg); a.imag=a.imag + b.abs*sin(b.arg);
 /* subtract polar number b from complex number a; result is in a */
-#define ESWEEP_MATH_CP_SUB(a, b) a.real=a.real - b.abs*cos(b.arg); a.imag=a.imag - b.abs*sin(b.arg); 
+#define ESWEEP_MATH_CP_SUB(a, b) a.real=a.real - b.abs*cos(b.arg); a.imag=a.imag - b.abs*sin(b.arg);
 
 /********************
  * Polar with Polar *
