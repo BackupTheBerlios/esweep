@@ -141,7 +141,7 @@ const Tcl_ObjType tclEsweepObjType = {
 #endif /* NOSTRINGREP */
 	NULL
 	//SetFromAnyEsweepObj /* setFromAnyProc */
-}; 
+};
 
 #ifdef __cplusplus
 extern "C" {
@@ -160,7 +160,7 @@ DLL_EXPORT int Esweep_Init(Tcl_Interp *interp) {
 	}
 	for (i=0;mod_commands[i].name;i++) {
 		Tcl_CreateObjCommand(interp, mod_commands[i].name, mod_commands[i].wrapper, mod_commands[i].clientdata, NULL);
-	}	
+	}
 	return TCL_OK;
 }
 
@@ -168,18 +168,18 @@ DLL_EXPORT int Esweep_Init(Tcl_Interp *interp) {
 }
 #endif
 
-/* DupEsweepObjInternalRep() 
+/* DupEsweepObjInternalRep()
  *
- * Duplicate an esweep object. At the moment this functions performs a deep copy. 
- * It is planned that a shared object scheme is used in the future. 
+ * Duplicate an esweep object. At the moment this functions performs a deep copy.
+ * It is planned that a shared object scheme is used in the future.
  */
 static void DupEsweepObjInternalRep(Tcl_Obj *srcPtr, Tcl_Obj *copyPtr) {
-	esweep_object *srcObj=(esweep_object*) srcPtr->internalRep.otherValuePtr; 
+	esweep_object *srcObj=(esweep_object*) srcPtr->internalRep.otherValuePtr;
 	esweep_object *copyObj=esweep_clone(srcObj);
-	copyPtr->internalRep.otherValuePtr=copyObj; 
-	ESWEEP_DEBUG_PRINT("Duplicating object %p to %p\n", srcObj, copyObj); 
+	copyPtr->internalRep.otherValuePtr=copyObj;
+	ESWEEP_DEBUG_PRINT("Duplicating object %p to %p\n", srcObj, copyObj);
 }
-	
+
 static void FreeEsweepObjInternalRep(Tcl_Obj *esweepObjPtr) {
 	esweep_object *obj=(esweep_object*) esweepObjPtr->internalRep.otherValuePtr;
 	ESWEEP_DEBUG_PRINT("Freeing object: %p\n", obj);
@@ -188,162 +188,162 @@ static void FreeEsweepObjInternalRep(Tcl_Obj *esweepObjPtr) {
 
 #if !(__BSD_VISIBLE || __XPG_VISIBLE >= 400)
 static int nstrncat(char* dst, const char* src, size_t size) {
-	   char *str=strncat(dst, src, size); 
-	   return strlen(str); 
+	   char *str=strncat(dst, src, size);
+	   return strlen(str);
 }
 #endif
-	   
-	   
+
+
 
 static void UpdateStringOfEsweepObj(Tcl_Obj *esweepObjPtr) {
 # define TMP_SIZE 256
 	esweep_object *obj=(esweep_object*) esweepObjPtr->internalRep.otherValuePtr;
-	unsigned strSize, size; 
-	char tmpStr[TMP_SIZE]; 
-	char *resStr; 
-	int i; 
-	Wave *wave; 
-	Polar *polar; 
-	Complex *cpx; 
-	//Surface *surf; 
+	unsigned strSize, size;
+	char tmpStr[TMP_SIZE];
+	char *resStr;
+	int i;
+	Wave *wave;
+	Polar *polar;
+	Complex *cpx;
+	//Surface *surf;
 
 	ESWEEP_DEBUG_PRINT("Creating string rep of object: %p", obj);
 	switch (obj->type) {
-		case WAVE: 
-			/* 
+		case WAVE:
+			/*
 			 * The object is converted as the following form
 			 * "wave samplerate size n0 n1 ..."
 			 */
 
-			/* 
-			 * estimate the size of the string 
+			/*
+			 * estimate the size of the string
 			 */
 
 			/* each number needs TCL_DOUBLE_SPACE */
-			strSize=TCL_DOUBLE_SPACE*obj->size; 
+			strSize=TCL_DOUBLE_SPACE*obj->size;
 			/* after each number there must be a whitespace */
-			strSize+=obj->size; 
+			strSize+=obj->size;
 			/* the type is written first ("wave" == 5 bytes inclusive whitespace) */
-			strSize+=5; 
+			strSize+=5;
 			/* Then the samplerate; we simply assume a size of 32+1 (for whitespace). This will be enough for the next million years */
-			strSize+=33; 
+			strSize+=33;
 			/* The same for the size */
-			strSize+=33; 
+			strSize+=33;
 			/* now allocate the string */
-			resStr=ckalloc(strSize); 
+			resStr=ckalloc(strSize);
 			/* initialize the stringRep with whitespaces */
-			memset(resStr, '\0', strSize); 
+			memset(resStr, '\0', strSize);
 
 			/* copy the string */
-			STRCPY(resStr, "wave", strSize); 
-			resStr[4]=' '; 
-			snprintf(tmpStr, TMP_SIZE, "%i %i ", obj->samplerate, obj->size); 
-			size=STRCAT(resStr, tmpStr, strSize); 
-			wave=(Wave*) obj->data; 
+			STRCPY(resStr, "wave", strSize);
+			resStr[4]=' ';
+			snprintf(tmpStr, TMP_SIZE, "%i %i ", obj->samplerate, obj->size);
+			size=STRCAT(resStr, tmpStr, strSize);
+			wave=(Wave*) obj->data;
 			for (i=0; i<obj->size; i++) {
 				/* empty tmp str */
-				memset(tmpStr, '\0', TMP_SIZE); 
-				snprintf(tmpStr, TMP_SIZE, "%g ", wave[i]); 
-				size=STRCAT(resStr, tmpStr, strSize); 
+				memset(tmpStr, '\0', TMP_SIZE);
+				snprintf(tmpStr, TMP_SIZE, "%g ", wave[i]);
+				size=STRCAT(resStr, tmpStr, strSize);
 			}
-			esweepObjPtr->length=size; 
-			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length); 
-			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length); 
-			ckfree(resStr); 
-			break; 
-		case COMPLEX: 
-			/* 
+			esweepObjPtr->length=size;
+			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length);
+			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length);
+			ckfree(resStr);
+			break;
+		case COMPLEX:
+			/*
 			 * The object is converted as the following form
 			 * "complex samplerate size {real0 imag0} {real1 imag1} ..."
 			 */
 
-			/* 
-			 * estimate the size of the string 
+			/*
+			 * estimate the size of the string
 			 */
 
-			/* each number needs TCL_DOUBLE_SPACE, Complex consists of 2 numbers, plus 
+			/* each number needs TCL_DOUBLE_SPACE, Complex consists of 2 numbers, plus
 			 * braces {} and a whitespace for each complex number */
-			strSize=(2*TCL_DOUBLE_SPACE+3)*obj->size; 
+			strSize=(2*TCL_DOUBLE_SPACE+3)*obj->size;
 			/* after each complex number there must be a whitespace */
-			strSize+=obj->size; 
+			strSize+=obj->size;
 			/* the type is written first ("complex" == 8 bytes inclusive whitespace) */
-			strSize+=8; 
+			strSize+=8;
 			/* Then the samplerate; we simply assume a size of 32+1 (for whitespace). This will be enough for the next million years */
-			strSize+=33; 
+			strSize+=33;
 			/* The same for the size */
-			strSize+=33; 
+			strSize+=33;
 			/* now allocate the string */
-			resStr=ckalloc(strSize); 
+			resStr=ckalloc(strSize);
 			/* initialize the stringRep with whitespaces */
-			memset(resStr, '\0', strSize); 
+			memset(resStr, '\0', strSize);
 
 			/* copy the string */
-			STRCPY(resStr, "complex", strSize); 
-			resStr[7]=' '; 
-			snprintf(tmpStr, TMP_SIZE, "%i %i ", obj->samplerate, obj->size); 
-			size=STRCAT(resStr, tmpStr, strSize); 
-			cpx=(Complex*) obj->data; 
+			STRCPY(resStr, "complex", strSize);
+			resStr[7]=' ';
+			snprintf(tmpStr, TMP_SIZE, "%i %i ", obj->samplerate, obj->size);
+			size=STRCAT(resStr, tmpStr, strSize);
+			cpx=(Complex*) obj->data;
 			for (i=0; i<obj->size; i++) {
 				/* empty tmp str */
-				memset(tmpStr, '\0', TMP_SIZE); 
-				snprintf(tmpStr, TMP_SIZE, "{%g %g} ", cpx[i].real, cpx[i].imag); 
-				size=STRCAT(resStr, tmpStr, strSize); 
+				memset(tmpStr, '\0', TMP_SIZE);
+				snprintf(tmpStr, TMP_SIZE, "{%g %g} ", cpx[i].real, cpx[i].imag);
+				size=STRCAT(resStr, tmpStr, strSize);
 			}
-			esweepObjPtr->length=size; 
-			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length); 
-			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length); 
-			ckfree(resStr); 
+			esweepObjPtr->length=size;
+			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length);
+			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length);
+			ckfree(resStr);
 
-			break; 
-		case POLAR: 
-			/* 
+			break;
+		case POLAR:
+			/*
 			 * The object is converted as the following form
 			 * "polar samplerate size {abs0 arg0} {abs1 arg1} ..."
 			 */
 
-			/* 
-			 * estimate the size of the string 
+			/*
+			 * estimate the size of the string
 			 */
 
-			/* each number needs TCL_DOUBLE_SPACE, Polar consists of 2 numbers, plus 
+			/* each number needs TCL_DOUBLE_SPACE, Polar consists of 2 numbers, plus
 			 * braces {} and a whitespace for each polar number */
-			strSize=(2*TCL_DOUBLE_SPACE+3)*obj->size; 
+			strSize=(2*TCL_DOUBLE_SPACE+3)*obj->size;
 			/* after each complex number there must be a whitespace */
-			strSize+=obj->size; 
+			strSize+=obj->size;
 			/* the type is written first ("polar" == 6 bytes inclusive whitespace) */
-			strSize+=6; 
+			strSize+=6;
 			/* Then the samplerate; we simply assume a size of 32+1 (for whitespace). This will be enough for the next million years */
-			strSize+=33; 
+			strSize+=33;
 			/* The same for the size */
-			strSize+=33; 
+			strSize+=33;
 
 			/* now allocate the string */
-			resStr=ckalloc(strSize); 
+			resStr=ckalloc(strSize);
 			/* initialize the stringRep with whitespaces */
-			memset(resStr, '\0', strSize); 
+			memset(resStr, '\0', strSize);
 
 			/* copy the string */
-			STRCPY(resStr, "polar", strSize); 
-			resStr[5]=' '; 
-			snprintf(tmpStr, TMP_SIZE, "%i %i ", obj->samplerate, obj->size); 
-			size=STRCAT(resStr, tmpStr, strSize); 
-			polar=(Polar*) obj->data; 
+			STRCPY(resStr, "polar", strSize);
+			resStr[5]=' ';
+			snprintf(tmpStr, TMP_SIZE, "%i %i ", obj->samplerate, obj->size);
+			size=STRCAT(resStr, tmpStr, strSize);
+			polar=(Polar*) obj->data;
 			for (i=0; i<obj->size; i++) {
 				/* empty tmp str */
-				memset(tmpStr, '\0', TMP_SIZE); 
-				snprintf(tmpStr, TMP_SIZE, "{%g %g} ", polar[i].abs, polar[i].arg); 
-				size=STRCAT(resStr, tmpStr, strSize); 
+				memset(tmpStr, '\0', TMP_SIZE);
+				snprintf(tmpStr, TMP_SIZE, "{%g %g} ", polar[i].abs, polar[i].arg);
+				size=STRCAT(resStr, tmpStr, strSize);
 			}
-			esweepObjPtr->length=size; 
-			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length); 
-			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length); 
-			ckfree(resStr); 
+			esweepObjPtr->length=size;
+			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length);
+			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length);
+			ckfree(resStr);
 
-			break; 
-		case SURFACE: 
-			break; 
-		default: 
-			break; 
+			break;
+		case SURFACE:
+			break;
+		default:
+			break;
 	}
 }
 #ifndef NOAUDIO
@@ -353,7 +353,7 @@ static void UpdateStringOfEsweepObj(Tcl_Obj *esweepObjPtr) {
  */
 
 static void DupEsweepAudio(Tcl_Obj *srcPtr, Tcl_Obj *copyPtr);
-static void UpdateStringOfEsweepAudioObj(Tcl_Obj *objPtr); 
+static void UpdateStringOfEsweepAudioObj(Tcl_Obj *objPtr);
 static void CloseEsweepAudio(Tcl_Obj *esweepAudioPtr);
 
 const Tcl_ObjType tclEsweepAudioType = {
@@ -363,31 +363,31 @@ const Tcl_ObjType tclEsweepAudioType = {
 	UpdateStringOfEsweepAudioObj, /* updateStringProc */
 	NULL
 	//SetFromAnyEsweepObj /* setFromAnyProc */
-}; 
+};
 
 
 static void DupEsweepAudio(Tcl_Obj *srcPtr, Tcl_Obj *copyPtr) {
-	TclEsweepAudio *srcEa=(TclEsweepAudio*) srcPtr->internalRep.otherValuePtr; 
-	copyPtr->internalRep.otherValuePtr=(void*) srcEa; 
+	TclEsweepAudio *srcEa=(TclEsweepAudio*) srcPtr->internalRep.otherValuePtr;
+	copyPtr->internalRep.otherValuePtr=(void*) srcEa;
 
-	TCLESWEEPAUDIO_INCREFCOUNT(srcEa); 
+	TCLESWEEPAUDIO_INCREFCOUNT(srcEa);
 }
 
 static void UpdateStringOfEsweepAudioObj(Tcl_Obj *objPtr) {
 	/* Create a string from the pointer
-	 * We use at max 34+1 characters, this is enough for even 
+	 * We use at max 34+1 characters, this is enough even for
 	 * 128 bit long pointers */
-	TclEsweepAudio *eaPtr=(TclEsweepAudio*) objPtr->internalRep.otherValuePtr; 
-	char pstr[35]; 
-	snprintf(pstr, sizeof(pstr), "%p", eaPtr->handle); 
-	objPtr->length=strnlen(pstr, sizeof(pstr)); 
-	objPtr->bytes=ckalloc((unsigned) objPtr->length); 
-	STRCPY(objPtr->bytes, pstr, objPtr->length); 
+	TclEsweepAudio *eaPtr=(TclEsweepAudio*) objPtr->internalRep.otherValuePtr;
+	char pstr[35];
+	snprintf(pstr, sizeof(pstr), "%p", eaPtr->handle);
+	objPtr->length=STRLEN(pstr, sizeof(pstr));
+	objPtr->bytes=ckalloc((unsigned) objPtr->length);
+	STRCPY(objPtr->bytes, pstr, objPtr->length);
 }
 
 static void CloseEsweepAudio(Tcl_Obj *objPtr) {
-	TclEsweepAudio *eaPtr=(TclEsweepAudio*) objPtr->internalRep.otherValuePtr; 
-	TCLESWEEPAUDIO_DECREFCOUNT(eaPtr); 
-	if (eaPtr->refCount == 0) free(eaPtr); 
+	TclEsweepAudio *eaPtr=(TclEsweepAudio*) objPtr->internalRep.otherValuePtr;
+	TCLESWEEPAUDIO_DECREFCOUNT(eaPtr);
+	if (eaPtr->refCount == 0) free(eaPtr);
 }
 #endif
