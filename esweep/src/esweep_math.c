@@ -47,14 +47,14 @@ int esweep_max(const esweep_object *obj, int from, int to, Real *max) { /* UNTES
 	Real tmp;
 	int i, size;
 
-	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT); 
-	ESWEEP_ASSERT(from < obj->size, ERR_BAD_PARAMETER); 
-	ESWEEP_ASSERT(to < obj->size, ERR_BAD_PARAMETER); 
-	
-	if (from < 0) from=0; 
-	if (to < 0) to=obj->size-1; 
+	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
+	ESWEEP_ASSERT(from < obj->size, ERR_BAD_PARAMETER);
+	ESWEEP_ASSERT(to < obj->size, ERR_BAD_PARAMETER);
 
-	ESWEEP_ASSERT(to > from, ERR_BAD_PARAMETER); 
+	if (from < 0) from=0;
+	if (to < 0) to=obj->size-1;
+
+	ESWEEP_ASSERT(to > from, ERR_BAD_PARAMETER);
 
 	switch (obj->type) {
 		case WAVE:
@@ -71,7 +71,7 @@ int esweep_max(const esweep_object *obj, int from, int to, Real *max) { /* UNTES
 			break;
 		case POLAR:
 			polar=(Polar*) obj->data;
-			for (i=from+1, *max=polar[from].abs; i <= to; i++) 
+			for (i=from+1, *max=polar[from].abs; i <= to; i++)
 				if (polar[i].abs>*max) *max=polar[i].abs;
 			break;
 		case SURFACE:
@@ -94,14 +94,14 @@ int esweep_min(const esweep_object *obj, int from, int to, Real *min) { /* UNTES
 	Real tmp;
 	int i, size;
 
-	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT); 
-	ESWEEP_ASSERT(from < obj->size, ERR_BAD_PARAMETER); 
-	ESWEEP_ASSERT(to < obj->size, ERR_BAD_PARAMETER); 
-	
-	if (from < 0) from=0; 
-	if (to < 0) to=obj->size-1; 
+	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
+	ESWEEP_ASSERT(from < obj->size, ERR_BAD_PARAMETER);
+	ESWEEP_ASSERT(to < obj->size, ERR_BAD_PARAMETER);
 
-	ESWEEP_ASSERT(to > from, ERR_BAD_PARAMETER); 
+	if (from < 0) from=0;
+	if (to < 0) to=obj->size-1;
+
+	ESWEEP_ASSERT(to > from, ERR_BAD_PARAMETER);
 
 	switch (obj->type) {
 		case WAVE:
@@ -142,13 +142,13 @@ int esweep_maxPos(const esweep_object *obj, int from, int to, int *pos) { /* UNT
 	int i;
 
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
-	ESWEEP_ASSERT(from < obj->size, ERR_BAD_PARAMETER); 
-	ESWEEP_ASSERT(to < obj->size, ERR_BAD_PARAMETER); 
-	
-	if (from < 0) from=0; 
-	if (to < 0) to=obj->size-1; 
+	ESWEEP_ASSERT(from < obj->size, ERR_BAD_PARAMETER);
+	ESWEEP_ASSERT(to < obj->size, ERR_BAD_PARAMETER);
 
-	ESWEEP_ASSERT(to > from, ERR_BAD_PARAMETER); 
+	if (from < 0) from=0;
+	if (to < 0) to=obj->size-1;
+
+	ESWEEP_ASSERT(to > from, ERR_BAD_PARAMETER);
 
 	switch (obj->type) {
 		case WAVE:
@@ -193,13 +193,13 @@ int esweep_minPos(const esweep_object *obj, int from, int to, int *pos) { /* UNT
 	int i;
 
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
-	ESWEEP_ASSERT(from < obj->size, ERR_BAD_PARAMETER); 
-	ESWEEP_ASSERT(to < obj->size, ERR_BAD_PARAMETER); 
-	
-	if (from < 0) from=0; 
-	if (to < 0) to=obj->size-1; 
+	ESWEEP_ASSERT(from < obj->size, ERR_BAD_PARAMETER);
+	ESWEEP_ASSERT(to < obj->size, ERR_BAD_PARAMETER);
 
-	ESWEEP_ASSERT(to > from, ERR_BAD_PARAMETER); 
+	if (from < 0) from=0;
+	if (to < 0) to=obj->size-1;
+
+	ESWEEP_ASSERT(to > from, ERR_BAD_PARAMETER);
 
 	switch (obj->type) {
 		case WAVE:
@@ -236,20 +236,20 @@ int esweep_minPos(const esweep_object *obj, int from, int to, int *pos) { /* UNT
 }
 
 int esweep_avg(const esweep_object *obj, Real *avg) { /* UNTESTED */
-	Surface *surf; 
+	Surface *surf;
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
 	if (obj->type == SURFACE) {
-		surf=(Surface*) obj->data; 
+		surf=(Surface*) obj->data;
 		ESWEEP_OBJ_ISVALID_SURFACE(obj, surf, ERR_NOT_ON_THIS_TYPE, ERR_OBJ_NOT_VALID);
 		*avg= __esweep_intern__sum(obj)/(surf->xsize*surf->ysize);
 	} else 	*avg= __esweep_intern__sum(obj)/obj->size;
-	return ERR_OK; 
+	return ERR_OK;
 }
 
 int esweep_sum(const esweep_object *obj, Real *sum) { /* UNTESTED */
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
 	*sum= __esweep_intern__sum(obj);
-	return ERR_OK; 
+	return ERR_OK;
 }
 
 int esweep_sqsum(const esweep_object *obj, Real *sqsum) { /* UNTESTED */
@@ -262,7 +262,7 @@ int esweep_sqsum(const esweep_object *obj, Real *sqsum) { /* UNTESTED */
 
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
 
-	*sqsum=0.0; 
+	*sqsum=0.0;
 	size=obj->size;
 	switch (obj->type) {
 		case WAVE:
@@ -289,7 +289,7 @@ int esweep_sqsum(const esweep_object *obj, Real *sqsum) { /* UNTESTED */
 			*sqsum=__NAN("");
 	}
 
-	return ERR_OK; 
+	return ERR_OK;
 }
 
 int esweep_real(esweep_object *obj) { /* UNTESTED */
@@ -311,12 +311,12 @@ int esweep_real(esweep_object *obj) { /* UNTESTED */
 				cpx[i].real=polar[i].abs*COS(polar[i].arg);
 				cpx[i].imag=0;
 			}
-			obj->type=COMPLEX; 
+			obj->type=COMPLEX;
 			break;
 		default:
 			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
 	return ERR_OK;
 }
 
@@ -339,12 +339,12 @@ int esweep_imag(esweep_object *obj) { /* UNTESTED */
 				cpx[i].imag=polar[i].abs*SIN(polar[i].arg);
 				cpx[i].real=0;
 			}
-			obj->type=COMPLEX; 
+			obj->type=COMPLEX;
 			break;
 		default:
 			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
 	return ERR_OK;
 }
 
@@ -352,7 +352,7 @@ int esweep_abs(esweep_object *obj) { /* UNTESTED */
 	Complex *cpx;
 	Polar *polar;
 	Wave *wave;
-	Surface *surf; 
+	Surface *surf;
 	int i, size;
 
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
@@ -374,16 +374,16 @@ int esweep_abs(esweep_object *obj) { /* UNTESTED */
 			polar=(Polar*) obj->data;
 			for (i=0;i<obj->size;i++) polar[i].arg=0;
 			break;
-		case SURFACE: 
-			surf=(Surface*) obj->data; 
+		case SURFACE:
+			surf=(Surface*) obj->data;
 			ESWEEP_OBJ_ISVALID_SURFACE(obj, surf, ERR_NOT_ON_THIS_TYPE, ERR_OBJ_NOT_VALID);
-			for (i=0, size=surf->xsize*surf->ysize;i < size; i++) 
+			for (i=0, size=surf->xsize*surf->ysize;i < size; i++)
 				surf->z[i]=FABS(surf->z[i]);
-			break; 
+			break;
 		default:
 			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
 	return ERR_OK;
 }
 
@@ -410,8 +410,189 @@ int esweep_arg(esweep_object *obj) { /* UNTESTED */
 		default:
 			return ERR_NOT_ON_THIS_TYPE;
 	}
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
 	return ERR_OK;
+}
+
+int esweep_clipLower(esweep_object *a, const esweep_object *b) {
+	Complex *cpx_a, *cpx_b;
+	Polar *polar_a, *polar_b;
+	Wave *wave_a, *wave_b;
+	Surface *surf_a;
+	int i, size;
+
+	ESWEEP_OBJ_NOTEMPTY(a, ERR_EMPTY_OBJECT);
+	ESWEEP_OBJ_NOTEMPTY(b, ERR_EMPTY_OBJECT);
+
+	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING);
+
+  if (a->type != SURFACE) {
+    ESWEEP_ASSERT(a->type == b->type, ERR_DIFF_TYPES);
+  } else {
+    ESWEEP_ASSERT(b->type == WAVE, ERR_OP_NOT_ALLOWED);
+  }
+
+  if (b->size > 1) {
+    size = a->size > b->size ? b->size : a->size;
+    switch (a->type) {
+      case WAVE:
+        wave_a=(Wave*) a->data;
+        wave_b=(Wave*) b->data;
+        for (i=0; i < size; i++) {
+          wave_a[i] = wave_a[i] > wave_b[i] ? wave_b[i] : wave_a[i];
+        }
+        break;
+      case COMPLEX:
+        cpx_a=(Complex*) a->data;
+        cpx_b=(Complex*) b->data;
+        for (i=0; i < size; i++) {
+          cpx_a[i].real = cpx_a[i].real > cpx_b[i].real ? cpx_b[i].real : cpx_a[i].real;
+          cpx_a[i].imag = cpx_a[i].imag > cpx_b[i].imag ? cpx_b[i].imag : cpx_a[i].imag;
+        }
+        break;
+      case POLAR:
+        polar_a=(Polar*) a->data;
+        polar_b=(Polar*) b->data;
+        for (i=0; i < size; i++) {
+          polar_a[i].abs = polar_a[i].abs > polar_b[i].abs ? polar_b[i].abs : polar_a[i].abs;
+          polar_a[i].arg = polar_a[i].arg > polar_b[i].arg ? polar_b[i].arg : polar_a[i].arg;
+        }
+        break;
+      case SURFACE:
+      default:
+        return ERR_NOT_ON_THIS_TYPE;
+    }
+  } else {
+    size=a->size;
+    switch (a->type) {
+      case WAVE:
+        wave_a=(Wave*) a->data;
+        wave_b=(Wave*) b->data;
+        for (i=0; i < size; i++) {
+          wave_a[i] = wave_a[i] > wave_b[0] ? wave_b[0] : wave_a[i];
+        }
+        break;
+      case COMPLEX:
+        cpx_a=(Complex*) a->data;
+        cpx_b=(Complex*) b->data;
+        for (i=0; i < size; i++) {
+          cpx_a[i].real = cpx_a[i].real > cpx_b[0].real ? cpx_b[0].real : cpx_a[i].real;
+          cpx_a[i].imag = cpx_a[i].imag > cpx_b[0].imag ? cpx_b[0].imag : cpx_a[i].imag;
+        }
+        break;
+      case POLAR:
+        polar_a=(Polar*) a->data;
+        polar_b=(Polar*) b->data;
+        for (i=0; i < size; i++) {
+          polar_a[i].abs = polar_a[i].abs > polar_b[0].abs ? polar_b[0].abs : polar_a[i].abs;
+          polar_a[i].arg = polar_a[i].arg > polar_b[0].arg ? polar_b[0].arg : polar_a[i].arg;
+        }
+        break;
+      case SURFACE:
+        surf_a=(Surface*) a->data;
+        wave_b=(Wave*) b->data;
+        ESWEEP_OBJ_ISVALID_SURFACE(a, surf_a, ERR_NOT_ON_THIS_TYPE, ERR_OBJ_NOT_VALID);
+        for (i=0, size=surf_a->xsize*surf_a->ysize; i < size; i++) {
+          surf_a->z[i] = surf_a->z[i] > wave_b[i] ? wave_b[i] : surf_a->z[i];
+        }
+        break;
+      default:
+        return ERR_NOT_ON_THIS_TYPE;
+    }
+  }
+
+  return ERR_OK;
+}
+
+
+int esweep_clipUpper(esweep_object *a, const esweep_object *b) {
+	Complex *cpx_a, *cpx_b;
+	Polar *polar_a, *polar_b;
+	Wave *wave_a, *wave_b;
+	Surface *surf_a;
+	int i, size;
+
+	ESWEEP_OBJ_NOTEMPTY(a, ERR_EMPTY_OBJECT);
+	ESWEEP_OBJ_NOTEMPTY(b, ERR_EMPTY_OBJECT);
+
+	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING);
+
+  if (a->type != SURFACE) {
+    ESWEEP_ASSERT(a->type == b->type, ERR_DIFF_TYPES);
+  } else {
+    ESWEEP_ASSERT(b->type == WAVE, ERR_OP_NOT_ALLOWED);
+  }
+
+  if (b->size > 1) {
+    size = a->size > b->size ? b->size : a->size;
+    switch (a->type) {
+      case WAVE:
+        wave_a=(Wave*) a->data;
+        wave_b=(Wave*) b->data;
+        for (i=0; i < size; i++) {
+          wave_a[i] = wave_a[i] < wave_b[i] ? wave_b[i] : wave_a[i];
+        }
+        break;
+      case COMPLEX:
+        cpx_a=(Complex*) a->data;
+        cpx_b=(Complex*) b->data;
+        for (i=0; i < size; i++) {
+          cpx_a[i].real = cpx_a[i].real < cpx_b[i].real ? cpx_b[i].real : cpx_a[i].real;
+          cpx_a[i].imag = cpx_a[i].imag < cpx_b[i].imag ? cpx_b[i].imag : cpx_a[i].imag;
+        }
+        break;
+      case POLAR:
+        polar_a=(Polar*) a->data;
+        polar_b=(Polar*) b->data;
+        for (i=0; i < size; i++) {
+          polar_a[i].abs = polar_a[i].abs < polar_b[i].abs ? polar_b[i].abs : polar_a[i].abs;
+          polar_a[i].arg = polar_a[i].arg < polar_b[i].arg ? polar_b[i].arg : polar_a[i].arg;
+        }
+        break;
+      case SURFACE:
+      default:
+        return ERR_NOT_ON_THIS_TYPE;
+    }
+  } else {
+    size=a->size;
+    switch (a->type) {
+      case WAVE:
+        wave_a=(Wave*) a->data;
+        wave_b=(Wave*) b->data;
+        for (i=0; i < size; i++) {
+          wave_a[i] = wave_a[i] < wave_b[0] ? wave_b[0] : wave_a[i];
+        }
+        break;
+      case COMPLEX:
+        cpx_a=(Complex*) a->data;
+        cpx_b=(Complex*) b->data;
+        for (i=0; i < size; i++) {
+          cpx_a[i].real = cpx_a[i].real < cpx_b[0].real ? cpx_b[0].real : cpx_a[i].real;
+          cpx_a[i].imag = cpx_a[i].imag < cpx_b[0].imag ? cpx_b[0].imag : cpx_a[i].imag;
+        }
+        break;
+      case POLAR:
+        polar_a=(Polar*) a->data;
+        polar_b=(Polar*) b->data;
+        for (i=0; i < size; i++) {
+          polar_a[i].abs = polar_a[i].abs < polar_b[0].abs ? polar_b[0].abs : polar_a[i].abs;
+          polar_a[i].arg = polar_a[i].arg < polar_b[0].arg ? polar_b[0].arg : polar_a[i].arg;
+        }
+        break;
+      case SURFACE:
+        surf_a=(Surface*) a->data;
+        wave_b=(Wave*) b->data;
+        ESWEEP_OBJ_ISVALID_SURFACE(a, surf_a, ERR_NOT_ON_THIS_TYPE, ERR_OBJ_NOT_VALID);
+        for (i=0, size=surf_a->xsize*surf_a->ysize; i < size; i++) {
+          surf_a->z[i] = surf_a->z[i] < wave_b[i] ? wave_b[i] : surf_a->z[i];
+        }
+        break;
+      default:
+        return ERR_NOT_ON_THIS_TYPE;
+    }
+  }
+
+  return ERR_OK;
 }
 
 /* elementary math */
@@ -437,7 +618,7 @@ int esweep_arg(esweep_object *obj) { /* UNTESTED */
 							ESWEEP_MATH_CP_##op(a[i], b[i]); \
 						} \
 					}
-		
+
 #define CR(op, a, b, size_a, size_b, N)	if (size_b == 1) { \
 						for (i=0;i < size_a;i++) { \
 							ESWEEP_MATH_CR_##op(a[i], b[0]); \
@@ -474,445 +655,445 @@ int esweep_arg(esweep_object *obj) { /* UNTESTED */
 
 int esweep_add(esweep_object *a, const esweep_object *b) {
 	Wave *wave_a, *wave_b;
-	Complex *cpx_a, *cpx_b; 
+	Complex *cpx_a, *cpx_b;
 	Polar *polar_a, *polar_b;
-	Surface *surf; 
+	Surface *surf;
 	int i, N;
 
 	ESWEEP_OBJ_NOTEMPTY(a, ERR_EMPTY_OBJECT);
 	ESWEEP_OBJ_NOTEMPTY(b, ERR_EMPTY_OBJECT);
 
-	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING); 
+	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING);
 
 	switch (a->type) {
-		case WAVE: 
-			wave_a=(Wave*) a->data; 
+		case WAVE:
+			wave_a=(Wave*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					wave_b=(Wave*) b->data;
 					if (b->size == 1) {
 						for (i=0;i < a->size;i++) {
-							wave_a[i] += wave_b[0]; 
+							wave_a[i] += wave_b[0];
 						}
 					} else {
 						N=a->size > b->size ? b->size : a->size;
 						for (i=0;i < N;i++) {
-							wave_a[i] += wave_b[i]; 
+							wave_a[i] += wave_b[i];
 						}
 					}
-					break; 
-				case COMPLEX: 
-					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a); 
-					cpx_b=(Complex*) b->data; 
+					break;
+				case COMPLEX:
+					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a);
+					cpx_b=(Complex*) b->data;
 					CC(ADD, cpx_a, cpx_b, a->size, b->size, N);
-					break; 
-				case POLAR: 
-					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a); 
-					polar_b=(Polar*) b->data; 
+					break;
+				case POLAR:
+					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a);
+					polar_b=(Polar*) b->data;
 					CP(ADD, cpx_a, polar_b, a->size, b->size, N);
 					c2p((Polar*) cpx_a, cpx_a, a->size);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 				}
-			break; 
-		case COMPLEX: 
+			break;
+		case COMPLEX:
 			switch (b->type) {
-				case WAVE: 
-					cpx_a=(Complex*) a->data; 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					cpx_a=(Complex*) a->data;
+					wave_b=(Wave*) b->data;
 					CR(ADD, cpx_a, wave_b, a->size, b->size, N);
-					break; 
-				case COMPLEX: 
-					cpx_a=(Complex*) a->data; 
-					cpx_b=(Complex*) b->data; 
+					break;
+				case COMPLEX:
+					cpx_a=(Complex*) a->data;
+					cpx_b=(Complex*) b->data;
 					CC(ADD, cpx_a, cpx_b, a->size, b->size, N);
-					break; 
-				case POLAR: 
-					cpx_a=(Complex*) a->data; 
-					polar_b=(Polar*) b->data; 
+					break;
+				case POLAR:
+					cpx_a=(Complex*) a->data;
+					polar_b=(Polar*) b->data;
 					CP(ADD, cpx_a, polar_b, a->size, b->size, N);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
-		case POLAR: 
-			polar_a=(Polar*) a->data; 
+			break;
+		case POLAR:
+			polar_a=(Polar*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					cpx_a=(Complex*) polar_a; 
-					p2c(cpx_a, polar_a, a->size); 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					cpx_a=(Complex*) polar_a;
+					p2c(cpx_a, polar_a, a->size);
+					wave_b=(Wave*) b->data;
 					CR(ADD, cpx_a, wave_b, a->size, b->size, N);
-					c2p(polar_a, cpx_a, a->size); 
-					break; 
-				case COMPLEX: 
-					cpx_a=(Complex*) polar_a; 
-					p2c(cpx_a, polar_a, a->size); 
-					cpx_b=(Complex*) b->data; 
+					c2p(polar_a, cpx_a, a->size);
+					break;
+				case COMPLEX:
+					cpx_a=(Complex*) polar_a;
+					p2c(cpx_a, polar_a, a->size);
+					cpx_b=(Complex*) b->data;
 					CC(ADD, cpx_a, cpx_b, a->size, b->size, N);
-					c2p(polar_a, cpx_a, a->size); 
-					break; 
-				case POLAR: 	
-					polar_b=(Polar*) b->data; 
+					c2p(polar_a, cpx_a, a->size);
+					break;
+				case POLAR:
+					polar_b=(Polar*) b->data;
 					PP(ADD, polar_a, polar_b, a->size, b->size, N);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
-		case SURFACE: 
+			break;
+		case SURFACE:
 			switch (b->type) {
-				case WAVE: 
-					ESWEEP_ASSERT(b->size == 1, ERR_SIZE_MISMATCH); 
-					wave_b=(Wave*) b->data; 
-					surf=(Surface*) a->data; 
-					N=surf->xsize*surf->ysize; 
+				case WAVE:
+					ESWEEP_ASSERT(b->size == 1, ERR_SIZE_MISMATCH);
+					wave_b=(Wave*) b->data;
+					surf=(Surface*) a->data;
+					N=surf->xsize*surf->ysize;
 					for (i=0; i < N; i++) {
 						(surf->z)[i]+=wave_b[0];
 					}
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
+			break;
 		default:
 			ESWEEP_NOT_THIS_TYPE(a->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(a), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(a), ERR_FP);
 	return ERR_OK;
 }
 
 int esweep_sub(esweep_object *a, const esweep_object *b) {
 	Wave *wave_a, *wave_b;
-	Complex *cpx_a, *cpx_b; 
+	Complex *cpx_a, *cpx_b;
 	Polar *polar_a, *polar_b;
-	Surface *surf; 
+	Surface *surf;
 	int i, N;
 
 	ESWEEP_OBJ_NOTEMPTY(a, ERR_EMPTY_OBJECT);
 	ESWEEP_OBJ_NOTEMPTY(b, ERR_EMPTY_OBJECT);
 
-	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING); 
+	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING);
 
 	switch (a->type) {
-		case WAVE: 
-			wave_a=(Wave*) a->data; 
+		case WAVE:
+			wave_a=(Wave*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					wave_b=(Wave*) b->data;
 					if (b->size == 1) {
 						for (i=0;i < a->size;i++) {
-							wave_a[i] -= wave_b[0]; 
+							wave_a[i] -= wave_b[0];
 						}
 					} else {
 						N=a->size > b->size ? b->size : a->size;
 						for (i=0;i < N;i++) {
-							wave_a[i] -= wave_b[i]; 
+							wave_a[i] -= wave_b[i];
 						}
 					}
-					break; 
-				case COMPLEX: 
-					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a); 
-					cpx_b=(Complex*) b->data; 
+					break;
+				case COMPLEX:
+					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a);
+					cpx_b=(Complex*) b->data;
 					CC(SUB, cpx_a, cpx_b, a->size, b->size, N);
-					break; 
-				case POLAR: 
-					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a); 
-					polar_b=(Polar*) b->data; 
+					break;
+				case POLAR:
+					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a);
+					polar_b=(Polar*) b->data;
 					CP(SUB, cpx_a, polar_b, a->size, b->size, N);
 					c2p((Polar*) cpx_a, cpx_a, a->size);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 				}
-			break; 
-		case COMPLEX: 
+			break;
+		case COMPLEX:
 			switch (b->type) {
-				case WAVE: 
-					cpx_a=(Complex*) a->data; 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					cpx_a=(Complex*) a->data;
+					wave_b=(Wave*) b->data;
 					CR(SUB, cpx_a, wave_b, a->size, b->size, N);
-					break; 
-				case COMPLEX: 
-					cpx_a=(Complex*) a->data; 
-					cpx_b=(Complex*) b->data; 
+					break;
+				case COMPLEX:
+					cpx_a=(Complex*) a->data;
+					cpx_b=(Complex*) b->data;
 					CC(SUB, cpx_a, cpx_b, a->size, b->size, N);
-					break; 
-				case POLAR: 
-					cpx_a=(Complex*) a->data; 
-					polar_b=(Polar*) b->data; 
+					break;
+				case POLAR:
+					cpx_a=(Complex*) a->data;
+					polar_b=(Polar*) b->data;
 					CP(SUB, cpx_a, polar_b, a->size, b->size, N);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
-		case POLAR: 
-			polar_a=(Polar*) a->data; 
+			break;
+		case POLAR:
+			polar_a=(Polar*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					cpx_a=(Complex*) polar_a; 
-					p2c(cpx_a, polar_a, a->size); 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					cpx_a=(Complex*) polar_a;
+					p2c(cpx_a, polar_a, a->size);
+					wave_b=(Wave*) b->data;
 					CR(SUB, cpx_a, wave_b, a->size, b->size, N);
-					c2p(polar_a, cpx_a, a->size); 
-					break; 
-				case COMPLEX: 
-					cpx_a=(Complex*) polar_a; 
-					p2c(cpx_a, polar_a, a->size); 
-					cpx_b=(Complex*) b->data; 
+					c2p(polar_a, cpx_a, a->size);
+					break;
+				case COMPLEX:
+					cpx_a=(Complex*) polar_a;
+					p2c(cpx_a, polar_a, a->size);
+					cpx_b=(Complex*) b->data;
 					CC(SUB, cpx_a, cpx_b, a->size, b->size, N);
-					c2p(polar_a, cpx_a, a->size); 
-					break; 
-				case POLAR: 	
-					polar_b=(Polar*) b->data; 
+					c2p(polar_a, cpx_a, a->size);
+					break;
+				case POLAR:
+					polar_b=(Polar*) b->data;
 					PP(SUB, polar_a, polar_b, a->size, b->size, N);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
-		case SURFACE: 
+			break;
+		case SURFACE:
 			switch (b->type) {
-				case WAVE: 
-					ESWEEP_ASSERT(b->size == 1, ERR_SIZE_MISMATCH); 
-					wave_b=(Wave*) b->data; 
-					surf=(Surface*) a->data; 
-					N=surf->xsize*surf->ysize; 
+				case WAVE:
+					ESWEEP_ASSERT(b->size == 1, ERR_SIZE_MISMATCH);
+					wave_b=(Wave*) b->data;
+					surf=(Surface*) a->data;
+					N=surf->xsize*surf->ysize;
 					for (i=0; i < N; i++) {
 						(surf->z)[i]-=wave_b[0];
 					}
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
+			break;
 		default:
 			ESWEEP_NOT_THIS_TYPE(a->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(a), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(a), ERR_FP);
 	return ERR_OK;
 }
 
 int esweep_mul(esweep_object *a, const esweep_object *b) {
 	Wave *wave_a, *wave_b;
-	Complex *cpx_a, *cpx_b; 
+	Complex *cpx_a, *cpx_b;
 	Polar *polar_a, *polar_b;
-	Surface *surf; 
+	Surface *surf;
 	int i, N;
 	Real tmp; // necessary for *_MUL macros
 
 	ESWEEP_OBJ_NOTEMPTY(a, ERR_EMPTY_OBJECT);
 	ESWEEP_OBJ_NOTEMPTY(b, ERR_EMPTY_OBJECT);
 
-	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING); 
+	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING);
 
 	switch (a->type) {
-		case WAVE: 
-			wave_a=(Wave*) a->data; 
+		case WAVE:
+			wave_a=(Wave*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					wave_b=(Wave*) b->data;
 					if (b->size == 1) {
 						for (i=0;i < a->size;i++) {
-							wave_a[i] *= wave_b[0]; 
+							wave_a[i] *= wave_b[0];
 						}
 					} else {
 						N=a->size > b->size ? b->size : a->size;
 						for (i=0;i < N;i++) {
-							wave_a[i] *= wave_b[i]; 
+							wave_a[i] *= wave_b[i];
 						}
 					}
-					break; 
-				case COMPLEX: 
-					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a); 
-					cpx_b=(Complex*) b->data; 
+					break;
+				case COMPLEX:
+					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a);
+					cpx_b=(Complex*) b->data;
 					CC(MUL, cpx_a, cpx_b, a->size, b->size, N);
-					break; 
-				case POLAR: 
-					ESWEEP_CONV_WAVE2POLAR(a, polar_a); 
-					polar_b=(Polar*) b->data; 
+					break;
+				case POLAR:
+					ESWEEP_CONV_WAVE2POLAR(a, polar_a);
+					polar_b=(Polar*) b->data;
 					PP(MUL, polar_a, polar_b, a->size, b->size, N);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 				}
-			break; 
-		case COMPLEX: 
-			cpx_a=(Complex*) a->data; 
+			break;
+		case COMPLEX:
+			cpx_a=(Complex*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					wave_b=(Wave*) b->data;
 					CR(MUL, cpx_a, wave_b, a->size, b->size, N);
-					break; 
-				case COMPLEX: 
-					cpx_b=(Complex*) b->data; 
+					break;
+				case COMPLEX:
+					cpx_b=(Complex*) b->data;
 					CC(MUL, cpx_a, cpx_b, a->size, b->size, N);
-					break; 
-				case POLAR: 
-					polar_a=(Polar*) cpx_a; 
-					c2p(polar_a, cpx_a, a->size); 
-					polar_b=(Polar*) b->data; 
+					break;
+				case POLAR:
+					polar_a=(Polar*) cpx_a;
+					c2p(polar_a, cpx_a, a->size);
+					polar_b=(Polar*) b->data;
 					PP(MUL, polar_a, polar_b, a->size, b->size, N);
-					p2c(cpx_a, polar_a, a->size); 
-					break; 
-				default: 	
+					p2c(cpx_a, polar_a, a->size);
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
-		case POLAR: 
-			polar_a=(Polar*) a->data; 
+			break;
+		case POLAR:
+			polar_a=(Polar*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					wave_b=(Wave*) b->data;
 					PR(MUL, polar_a, wave_b, a->size, b->size, N);
-					break; 
-				case COMPLEX: 
-					cpx_b=(Complex*) b->data; 
-					polar_b=(Polar*) b->data; 
-					c2p(polar_b, cpx_b, b->size); 
+					break;
+				case COMPLEX:
+					cpx_b=(Complex*) b->data;
+					polar_b=(Polar*) b->data;
+					c2p(polar_b, cpx_b, b->size);
 					PP(MUL, polar_a, polar_b, a->size, b->size, N);
-					p2c(cpx_b, polar_b, b->size); 
-					break; 
-				case POLAR: 	
-					polar_b=(Polar*) b->data; 
+					p2c(cpx_b, polar_b, b->size);
+					break;
+				case POLAR:
+					polar_b=(Polar*) b->data;
 					PP(MUL, polar_a, polar_b, a->size, b->size, N);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
-		case SURFACE: 
+			break;
+		case SURFACE:
 			switch (b->type) {
-				case WAVE: 
-					ESWEEP_ASSERT(b->size == 1, ERR_SIZE_MISMATCH); 
-					wave_b=(Wave*) b->data; 
-					surf=(Surface*) a->data; 
-					N=surf->xsize*surf->ysize; 
+				case WAVE:
+					ESWEEP_ASSERT(b->size == 1, ERR_SIZE_MISMATCH);
+					wave_b=(Wave*) b->data;
+					surf=(Surface*) a->data;
+					N=surf->xsize*surf->ysize;
 					for (i=0; i < N; i++) {
 						(surf->z)[i]*=wave_b[0];
 					}
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
+			break;
 		default:
 			ESWEEP_NOT_THIS_TYPE(a->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(a), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(a), ERR_FP);
 	return ERR_OK;
 }
 
 int esweep_div(esweep_object *a, const esweep_object *b) {
 	Wave *wave_a, *wave_b;
-	Complex *cpx_a, *cpx_b; 
+	Complex *cpx_a, *cpx_b;
 	Polar *polar_a, *polar_b;
-	Surface *surf; 
+	Surface *surf;
 	int i, N;
 	Real tmp, denom; // necessary for *_DIV macros
 
 	ESWEEP_OBJ_NOTEMPTY(a, ERR_EMPTY_OBJECT);
 	ESWEEP_OBJ_NOTEMPTY(b, ERR_EMPTY_OBJECT);
 
-	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING); 
+	ESWEEP_SAME_MAPPING(a, b, ERR_DIFF_MAPPING);
 
 	switch (a->type) {
-		case WAVE: 
-			wave_a=(Wave*) a->data; 
+		case WAVE:
+			wave_a=(Wave*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					wave_b=(Wave*) b->data;
 					if (b->size == 1) {
 						for (i=0;i < a->size;i++) {
-							wave_a[i] /= wave_b[0]; 
+							wave_a[i] /= wave_b[0];
 						}
 					} else {
 						N=a->size > b->size ? b->size : a->size;
 						for (i=0;i < N;i++) {
-							wave_a[i] /= wave_b[i]; 
+							wave_a[i] /= wave_b[i];
 						}
 					}
-					break; 
-				case COMPLEX: 
-					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a); 
-					cpx_b=(Complex*) b->data; 
+					break;
+				case COMPLEX:
+					ESWEEP_CONV_WAVE2COMPLEX(a, cpx_a);
+					cpx_b=(Complex*) b->data;
 					CC(DIV, cpx_a, cpx_b, a->size, b->size, N);
-					break; 
-				case POLAR: 
-					ESWEEP_CONV_WAVE2POLAR(a, polar_a); 
-					polar_b=(Polar*) b->data; 
+					break;
+				case POLAR:
+					ESWEEP_CONV_WAVE2POLAR(a, polar_a);
+					polar_b=(Polar*) b->data;
 					PP(DIV, polar_a, polar_b, a->size, b->size, N);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 				}
-			break; 
-		case COMPLEX: 
-			cpx_a=(Complex*) a->data; 
+			break;
+		case COMPLEX:
+			cpx_a=(Complex*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					wave_b=(Wave*) b->data;
 					CR(DIV, cpx_a, wave_b, a->size, b->size, N);
-					break; 
-				case COMPLEX: 
-					cpx_b=(Complex*) b->data; 
+					break;
+				case COMPLEX:
+					cpx_b=(Complex*) b->data;
 					CC(DIV, cpx_a, cpx_b, a->size, b->size, N);
-					break; 
-				case POLAR: 
-					polar_a=(Polar*) cpx_a; 
-					c2p(polar_a, cpx_a, a->size); 
-					polar_b=(Polar*) b->data; 
+					break;
+				case POLAR:
+					polar_a=(Polar*) cpx_a;
+					c2p(polar_a, cpx_a, a->size);
+					polar_b=(Polar*) b->data;
 					PP(DIV, polar_a, polar_b, a->size, b->size, N);
-					p2c(cpx_a, polar_a, a->size); 
-					break; 
-				default: 	
+					p2c(cpx_a, polar_a, a->size);
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
-		case POLAR: 
-			polar_a=(Polar*) a->data; 
+			break;
+		case POLAR:
+			polar_a=(Polar*) a->data;
 			switch (b->type) {
-				case WAVE: 
-					wave_b=(Wave*) b->data; 
+				case WAVE:
+					wave_b=(Wave*) b->data;
 					PR(DIV, polar_a, wave_b, a->size, b->size, N);
-					break; 
-				case COMPLEX: 
-					cpx_b=(Complex*) b->data; 
-					polar_b=(Polar*) b->data; 
-					c2p(polar_b, cpx_b, b->size); 
+					break;
+				case COMPLEX:
+					cpx_b=(Complex*) b->data;
+					polar_b=(Polar*) b->data;
+					c2p(polar_b, cpx_b, b->size);
 					PP(DIV, polar_a, polar_b, a->size, b->size, N);
-					p2c(cpx_b, polar_b, b->size); 
-					break; 
-				case POLAR: 	
-					polar_b=(Polar*) b->data; 
+					p2c(cpx_b, polar_b, b->size);
+					break;
+				case POLAR:
+					polar_b=(Polar*) b->data;
 					PP(DIV, polar_a, polar_b, a->size, b->size, N);
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
-		case SURFACE: 
+			break;
+		case SURFACE:
 			switch (b->type) {
-				case WAVE: 
-					ESWEEP_ASSERT(b->size == 1, ERR_SIZE_MISMATCH); 
-					wave_b=(Wave*) b->data; 
-					surf=(Surface*) a->data; 
-					N=surf->xsize*surf->ysize; 
+				case WAVE:
+					ESWEEP_ASSERT(b->size == 1, ERR_SIZE_MISMATCH);
+					wave_b=(Wave*) b->data;
+					surf=(Surface*) a->data;
+					N=surf->xsize*surf->ysize;
 					for (i=0; i < N; i++) {
 						(surf->z)[i]*=wave_b[0];
 					}
-					break; 
-				default: 	
+					break;
+				default:
 					ESWEEP_NOT_THIS_TYPE(b->type, ERR_NOT_ON_THIS_TYPE);
 			}
-			break; 
+			break;
 		default:
 			ESWEEP_NOT_THIS_TYPE(a->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(a), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(a), ERR_FP);
 	return ERR_OK;
 }
 
@@ -922,9 +1103,9 @@ int esweep_ln(esweep_object *obj) { /* natural logarithm */
 	Wave *wave;
 	Polar *polar;
 	Surface *surface;
-	Complex *cpx; 
+	Complex *cpx;
 	int i, zsize;
-	Real abs, arg; 
+	Real abs, arg;
 
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
 
@@ -956,9 +1137,9 @@ int esweep_ln(esweep_object *obj) { /* natural logarithm */
 			}
 			break;
 		default:
-			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE); 
+			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
 	return ERR_OK;
 }
 
@@ -966,9 +1147,9 @@ int esweep_lg(esweep_object *obj) { /* logarithm to base 10 */
 	Wave *wave;
 	Polar *polar;
 	Surface *surface;
-	Complex *cpx; 
+	Complex *cpx;
 	int i, zsize;
-	Real abs, arg; 
+	Real abs, arg;
 
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
 
@@ -1000,10 +1181,10 @@ int esweep_lg(esweep_object *obj) { /* logarithm to base 10 */
 			}
 			break;
 		default:
-			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE); 
+			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
-	
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
+
 	return ERR_OK;
 }
 
@@ -1011,9 +1192,9 @@ int esweep_exp(esweep_object *obj) { /* e^obj */
 	Wave *wave;
 	Polar *polar;
 	Surface *surface;
-	Complex *cpx; 
+	Complex *cpx;
 	int i, zsize;
-	Real abs, arg; 
+	Real abs, arg;
 
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
 
@@ -1043,11 +1224,11 @@ int esweep_exp(esweep_object *obj) { /* e^obj */
 				cpx[i].real=abs*COS(arg);
 				cpx[i].imag=abs*SIN(arg);
 			}
-			break; 
+			break;
 		default:
-			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE); 
+			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
 	return ERR_OK;
 }
 
@@ -1079,9 +1260,9 @@ int esweep_pow(esweep_object *obj, Real x) { /* obj^x */
 			break;
 		case COMPLEX:
 		default:
-			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE); 
+			ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE);
 	}
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
 	return ERR_OK;
 }
 
@@ -1097,7 +1278,7 @@ int esweep_schroeder(esweep_object *obj) {
 
 	ESWEEP_OBJ_NOTEMPTY(obj, ERR_EMPTY_OBJECT);
 
-	if (obj->type != WAVE) ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE); 
+	if (obj->type != WAVE) ESWEEP_NOT_THIS_TYPE(obj->type, ERR_NOT_ON_THIS_TYPE);
 
 	wave=(Wave*) obj->data;
 	wave_out=(Wave*) calloc(obj->size, sizeof(Wave));
@@ -1111,7 +1292,7 @@ int esweep_schroeder(esweep_object *obj) {
 	free(obj->data);
 	obj->data=wave_out;
 
-	ESWEEP_ASSERT(correctFpException(obj), ERR_FP); 
+	ESWEEP_ASSERT(correctFpException(obj), ERR_FP);
 	return ERR_OK;
 }
 
