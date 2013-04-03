@@ -1,4 +1,4 @@
-/* 
+/*
  * Tcl-Module as a wrapper around the esweep library
  * the functions are added when they are needed
  */
@@ -7,7 +7,7 @@
 # if defined(_WIN32) || defined(__WIN32__) || defined(__CYGWIN__)
 #	define DLL_EXPORT  extern __declspec(dllexport)
 # else
-# 	define DLL_EXPORT 
+# 	define DLL_EXPORT
 # endif
 #endif
 
@@ -16,7 +16,7 @@
 #   define STDCALL __stdcall
 # else
 #   define STDCALL
-# endif 
+# endif
 #endif
 
 #include <ctype.h>
@@ -38,10 +38,10 @@
 /* often used macros */
 
 /*
- * Check if the parameter at index idx is an esweep object and if so, set obj to the internal representation 
- * If necessary, the object will be duplicated. 
+ * Check if the parameter at index idx is an esweep object and if so, set obj to the internal representation
+ * If necessary, the object will be duplicated.
  * The esweep function wrappers will not share objects by themselves. But they have to respect
- * sharing done by the Tcl interpreter itself. 
+ * sharing done by the Tcl interpreter itself.
  */
 #define CHECK_ESWEEP_OBJECT(idx, obj) if (objv[idx]->typePtr != &tclEsweepObjType) { \
 			Tcl_SetObjResult(interp, Tcl_ObjPrintf("Parameter %i not an esweep object", idx)); \
@@ -66,8 +66,8 @@
 			return TCL_ERROR; \
 		} else {obj=(esweep_audio*) ((TclEsweepAudio*) (objv[idx]->internalRep.otherValuePtr))->handle;}
 
-/* 
- * execute the esweep function and, if failed, create an error message and return TCL_ERROR; 
+/*
+ * execute the esweep function and, if failed, create an error message and return TCL_ERROR;
  */
 #define ESWEEP_TCL_ASSERT(expr) if (!(expr)) { \
 					Tcl_SetObjResult(interp, Tcl_NewStringObj(errmsg, -1)); \
@@ -86,7 +86,7 @@
 	}
 
 
-/* 
+/*
  * Check for the right number of arguments and construct an error message
  */
 #define CHECK_NUM_ARGS(expr, args) if (!(expr)) { \
@@ -94,22 +94,22 @@
 		return TCL_ERROR; \
 	}
 
-/* 
- * Duplicate an esweep object when needed 
+/*
+ * Duplicate an esweep object when needed
  * The esweep function wrappers will not share objects by themselves. But they have to respect
- * sharing done by the Tcl interpreter itself. 
+ * sharing done by the Tcl interpreter itself.
  */
 //#define DUPLICATE_WHEN_SHARED(tclObj, esweepObj) if (Tcl_IsShared(tclObj)) {tclObj = Tcl_DuplicateObj(tclObj); esweepObj=(esweep_object*) tclObj->internalRep.otherValuePtr;}
 #define DUPLICATE_WHEN_SHARED(tclObj, esweepObj)
 
 extern const Tcl_ObjType tclEsweepObjType;
-extern const Tcl_ObjType tclEsweepAudioType; 
+extern const Tcl_ObjType tclEsweepAudioType;
 
 /* this struct is needed to allow Tcl work flawless with the tclEsweepAudioType */
 typedef struct {
-	int refCount; 
-	esweep_audio *handle; 
-} TclEsweepAudio; 
+	int refCount;
+	esweep_audio *handle;
+} TclEsweepAudio;
 
 #define TCLESWEEPAUDIO_INCREFCOUNT(ea) ea->refCount++;
 #define TCLESWEEPAUDIO_DECREFCOUNT(ea) if (ea->refCount > 0) { \
@@ -125,8 +125,8 @@ typedef struct {
 int esweepCreate(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 int esweepClone(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 int esweepSparseSurface(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
-int esweepMove(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]); 
-int esweepCopy(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]); 
+int esweepMove(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
+int esweepCopy(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 
 /* base */
 int esweepGet(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
@@ -137,15 +137,16 @@ int esweepSamplerate(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Ob
 int esweepSetSamplerate(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 
 /* conv */
-int esweepToWave(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]); 
-int esweepToComplex(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]); 
-int esweepToPolar(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]); 
+int esweepToWave(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
+int esweepToComplex(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
+int esweepToPolar(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
+int esweepCompress(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 
 /* generate */
-int esweepGenerate(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]); 
+int esweepGenerate(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 
 /* dsp */
-int esweepDeconvolve(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]); 
+int esweepDeconvolve(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 int esweepFFT(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 int esweepIFFT(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 int esweepCreateFFTTable(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
@@ -174,6 +175,7 @@ int esweepSave(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CON
 
 /* math */
 int esweepExpr(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
+int esweepClip(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 int esweepMin(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 int esweepMax(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 int esweepMinPos(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
@@ -202,5 +204,5 @@ int esweepAudioIn(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *
 int esweepAudioClose(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 
 /* display */
-int esweepGetCoords(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);  
+int esweepGetCoords(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]);
 #endif

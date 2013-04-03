@@ -57,6 +57,7 @@ static command_info mod_commands[] = {
 	{"::esweep::toWave", esweepToWave, NULL},
 	{"::esweep::toComplex", esweepToComplex, NULL},
 	{"::esweep::toPolar", esweepToPolar, NULL},
+	{"::esweep::compress", esweepCompress, NULL},
 
 	{"::esweep::generate", esweepGenerate, NULL},
 
@@ -86,6 +87,7 @@ static command_info mod_commands[] = {
 	{"::esweep::save", esweepSave, NULL},
 
 	{"::esweep::expr", esweepExpr, NULL},
+	{"::esweep::clip", esweepClip, NULL},
 	{"::esweep::min", esweepMin, NULL},
 	{"::esweep::max", esweepMax, NULL},
 	{"::esweep::minPos", esweepMinPos, NULL},
