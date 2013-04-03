@@ -47,13 +47,13 @@
  * PARAMETERS:
  * const char *type: name of the object type, maybe "wave", "complex", "polar" or "surface" (case sensitive)
  * int samplerate: sample rate of the new object (must be > 0)
- * int size: number of samples (must be >= 0 && <= ESWEEP_MAX_SIZE). 
+ * int size: number of samples (must be >= 0 && <= ESWEEP_MAX_SIZE).
  *
  * RETURN:
  * Returns an esweep object or NULL if the creation failed.
  *
  * EXAMPLE:
- * esweep_object *obj=esweep_create("polar", 44100, 1000); 
+ * esweep_object *obj=esweep_create("polar", 44100, 1000);
  */
 esweep_object *esweep_create(const char *type, int samplerate, int size);
 
@@ -63,17 +63,17 @@ esweep_object *esweep_create(const char *type, int samplerate, int size);
  *
  * PARAMETERS:
  * esweep_object *obj: an esweep object, only type SURFACE is allowed
- * int xsize, ysize: size of the surface. 
+ * int xsize, ysize: size of the surface.
  *
- * DESCRIPTION: 
- * The rows (y) and columns (x) must not be equally spaced. Each item of the surface will be initally set to 0. 
+ * DESCRIPTION:
+ * The rows (y) and columns (x) must not be equally spaced. Each item of the surface will be initally set to 0.
  *
  * RETURN:
- * Returns an error code. 
+ * Returns an error code.
  *
  * EXAMPLE:
- * esweep_object *obj=esweep_create("surface", 44100, 1000); 
- * esweep_sparseSurface(obj, 1000, 100); 
+ * esweep_object *obj=esweep_create("surface", 44100, 1000);
+ * esweep_sparseSurface(obj, 1000, 100);
  */
 int esweep_sparseSurface(esweep_object *obj, int xsize, int ysize);
 
@@ -102,11 +102,11 @@ esweep_object *esweep_free(esweep_object *obj);
  * esweep_object *src: src object
  * int dst_pos: start index to which the data is moved
  * int src_pos: start index from which the data is moved
- * int len: number of samples to move. The boundaries of src and dst are kept, i. e. 
- * len is automatically reduced. 
+ * int len: number of samples to move. The boundaries of src and dst are kept, i. e.
+ * len is automatically reduced.
  *
- * DESCRIPTION: 
- * The object type may not be Surface. 
+ * DESCRIPTION:
+ * The object type may not be Surface.
  *
  * RETURN:
  * Returns an error code.
@@ -213,7 +213,7 @@ int esweep_size(const esweep_object *obj, int *size);
  * EXAMPLE:
  * esweep_surfaceSize(obj, &x, &y);
  */
-int esweep_surfaceSize(const esweep_object *obj, int *x, int *y); 
+int esweep_surfaceSize(const esweep_object *obj, int *x, int *y);
 
 /*******************************************************
  * Modify or convert attributes and types of an object *
@@ -230,7 +230,7 @@ int esweep_surfaceSize(const esweep_object *obj, int *x, int *y);
  * RETURN:
  * Returns an error code
  *
- * SEE ALSO: 
+ * SEE ALSO:
  * esweep_resample()
  *
  * EXAMPLE:
@@ -326,6 +326,7 @@ int esweep_toComplex(esweep_object *obj);
  */
 int esweep_toPolar(esweep_object *obj);
 
+int esweep_compress(esweep_object *obj, int factor);
 /*
  * esweep_switchRI()
  * Exchange real and imaginary part of a complex object
@@ -337,11 +338,11 @@ int esweep_toPolar(esweep_object *obj);
  * Returns an error code
  *
  * DESCRIPTION:
- * Possible for types Complex and Polar. In case of Polar, the new phase (arg) is 
+ * Possible for types Complex and Polar. In case of Polar, the new phase (arg) is
  * arg:=pi/2-arg
- * This is similar to mirroring at the pi/4-diagonal. As this method is fast, it 
- * bears a caveat: if the phase is unwrapped before, this may lead to wrong results 
- * (see esweep_unwrapPhase()). 
+ * This is similar to mirroring at the pi/4-diagonal. As this method is fast, it
+ * bears a caveat: if the phase is unwrapped before, this may lead to wrong results
+ * (see esweep_unwrapPhase()).
  */
 int esweep_switchRI(esweep_object *obj);
 
@@ -381,7 +382,7 @@ int esweep_unbuildWave(const esweep_object *obj, Real *t[], Real *a[]);
  * DESCRIPTION:
  * size must be > 0. The function does a full copy of wave[]. The size of the object
  * will be adjusted. Only Wave-objects are allowed as input.
- * 
+ *
  * RETURN:
  * Returns an error code
  *
@@ -391,7 +392,7 @@ int esweep_unbuildWave(const esweep_object *obj, Real *t[], Real *a[]);
  * // place some stuff in wave...
  * esweep_buildWave(obj, wave, 2000); // new size: 2000
  */
-int esweep_buildWave(esweep_object *obj, const Real wave[], int size); 
+int esweep_buildWave(esweep_object *obj, const Real wave[], int size);
 
 /*
  * esweep_unbuildComplex()
@@ -401,7 +402,7 @@ int esweep_buildWave(esweep_object *obj, const Real wave[], int size);
  * esweep_object *obj: esweep_object
  * Real *real[]: pointer to an array where the real part is placed into
  * Real *imag[]: pointer to an array where the imaginary part is placed into
- *
+*
  * DESCRIPTION:
  * If real or imag are not empty, they are freed. In the end real and imag point to an internally generated array.
  *
@@ -422,7 +423,7 @@ int esweep_unbuildComplex(const esweep_object *obj, Real *real[], Real *imag[]);
  *
  * DESCRIPTION:
  * size must be > 0. The function does a full copy of real[] and imag[]. The size of the object
- * will be adjusted. Only Complex-objects are allowed as input. 
+ * will be adjusted. Only Complex-objects are allowed as input.
  * Either real[] or imag[] may be NULL. Then only the non-NULL array is used, the other part is set to zero
  *
  * RETURN:
@@ -466,7 +467,7 @@ int esweep_unbuildPolar(const esweep_object *obj, Real *abs[], Real *arg[]);
  *
  * DESCRIPTION:
  * size must be > 0. The function does a full copy of abs[] and arg[]. The size of the object
- * will be adjusted. Only Polar-objects are allowed as input. 
+ * will be adjusted. Only Polar-objects are allowed as input.
  * Either abs[] or arg[] may be NULL. Then only the non-NULL array is used, the other part is set to zero
  *
  * RETURN:
@@ -505,17 +506,17 @@ int esweep_unbuildSurface(const esweep_object *obj, Real *x[], Real *y[], Real *
  *
  * PARAMETERS:
  * esweep_object *obj: esweep object
- * Real x[]: array with the x-vector 
+ * Real x[]: array with the x-vector
  * Real y[]: array with the y-vector
  * Real z[]: array with the z-vector
  * int xsize, ysize: size of the arrays
  *
  * DESCRIPTION:
- * x/ysize must be > 0, the size of the z-vector is calcualted by xsize*ysize. 
+ * x/ysize must be > 0, the size of the z-vector is calcualted by xsize*ysize.
  * The function does a full copy of x[], y[] and z[]. The size of the object
- * will be adjusted. Only Surface-objects are allowed as input. 
- * Any vector may be NULL. The internal vectors are then initiliased with 0. 
- * If all vectors are NULL, this function is similar to esweep_sparseSurface(). 
+ * will be adjusted. Only Surface-objects are allowed as input.
+ * Any vector may be NULL. The internal vectors are then initiliased with 0.
+ * If all vectors are NULL, this function is similar to esweep_sparseSurface().
  *
  * RETURN:
  * Returns an error code
@@ -528,33 +529,33 @@ int esweep_unbuildSurface(const esweep_object *obj, Real *x[], Real *y[], Real *
  * // place some stuff in x, y, z...
  * esweep_buildSurface(obj, x, y, z, 20, 10); // new size: 20 x 10
  */
-int esweep_buildSurface(esweep_object *obj, 
-			const Real x[], 
-			const Real y[], 
-			const Real z[], 
-			int xsize, 
+int esweep_buildSurface(esweep_object *obj,
+			const Real x[],
+			const Real y[],
+			const Real z[],
+			int xsize,
 			int ysize);
 
 /*
  * esweep_get()
- * Returns a part of an object. 
+ * Returns a part of an object.
  *
  * PARAMETERS:
  * const esweep_object *obj: esweep_object
  * int m: index, must be in range 0 <= m < obj->size (but see below)
  * int n: index, must be in range 0 <= n < obj->size (but see below)
  *
- * DESCRIPTION: 
- * For Wave, Complex and Polar objects, it returns the part of obj between indices m and n, inclusive. 
+ * DESCRIPTION:
+ * For Wave, Complex and Polar objects, it returns the part of obj between indices m and n, inclusive.
  *
- * For Surface objects, m corresponds to columns, and n to rows. The limits of above are not applying in this case. 
- * If m is negative, then the n'th row is extracted. If n is negative, then m'th column is extracted. 
+ * For Surface objects, m corresponds to columns, and n to rows. The limits of above are not applying in this case.
+ * If m is negative, then the n'th row is extracted. If n is negative, then m'th column is extracted.
  * If both m and n are positive, then the single value denoted by these coordinates is extracted
  *
  * RETURN:
  * esweep_object*
  *
- * SEE ALSO: 
+ * SEE ALSO:
  * esweep_rotate()
  *
  * EXAMPLE1:
@@ -566,15 +567,15 @@ int esweep_buildSurface(esweep_object *obj,
  * esweep_unbuildWave(obj, &t, &a);
  * printf("Time: %f ms, Amplitude: %f", 1000*t, a); // prints "Time: 10 ms, Level: 48"
  *
- * EXAMPLE2: 
- * esweep_object *obj=esweep_create("surface", 48000, 1); 
+ * EXAMPLE2:
+ * esweep_object *obj=esweep_create("surface", 48000, 1);
  * esweep_sparseSurface(obj, 1000, 1000); // 1000 (cols) x 1000 (rows) surface
  * esweep_object *col=esweep_getSurface(obj, 100, -1); // 100th column, size 1 x 1000
  * esweep_object *row=esweep_getSurface(obj, -1, 5); // 5th row, size 1000 x 1
  * esweep_object *point=esweep_getSurface(obj, 100, 5); // 100th column and 5th row, size 1 x 1
  */
 esweep_object* esweep_get(const esweep_object *obj, int m, int n);
-int esweep_index(const esweep_object *obj, int index, Real *x, Real *a, Real *b); 
+int esweep_index(const esweep_object *obj, int index, Real *x, Real *a, Real *b);
 /* TODO: create a corresponding function esweep_set() \
  * jfab: Do we really need it? */
 
@@ -674,9 +675,9 @@ int esweep_imag(esweep_object *obj);
  * Returns an error code.
  *
  * DESCRIPTION:
- * esweep_arg() works similar to esweep_imag(). esweep_abs() works similar to esweep_real(), except that 
- * Surfaces and Waves are also allowed. Their type will not be converted, 
- * so that it works like a common abs() function. With Surfaces, only the z-coordinate is affected. 
+ * esweep_arg() works similar to esweep_imag(). esweep_abs() works similar to esweep_real(), except that
+ * Surfaces and Waves are also allowed. Their type will not be converted,
+ * so that it works like a common abs() function. With Surfaces, only the z-coordinate is affected.
  *
  * EXAMPLE:
  */
@@ -684,10 +685,13 @@ int esweep_imag(esweep_object *obj);
 int esweep_abs(esweep_object *obj);
 int esweep_arg(esweep_object *obj);
 
+int esweep_clipLower(esweep_object *a, const esweep_object *b);
+int esweep_clipUpper(esweep_object *a, const esweep_object *b);
+
 /*
  * esweep_add()
  * esweep_sub()
- * Adds or subtracts object b to/from object a. 
+ * Adds or subtracts object b to/from object a.
  *
  * PARAMETERS:
  * esweep_object *a: esweep_object
@@ -697,34 +701,34 @@ int esweep_arg(esweep_object *obj);
  * Returns an error code.
  *
  * DESCRIPTION:
- * These functions operate highly dependant of the type and size of their input. The mapping must always match. 
- * operation independent of types (except SURFACE): 
- * 	- If a (size N) is smaller than b (size M), then N samples of b are added/sub'ed to/from a, 
+ * These functions operate highly dependant of the type and size of their input. The mapping must always match.
+ * operation independent of types (except SURFACE):
+ * 	- If a (size N) is smaller than b (size M), then N samples of b are added/sub'ed to/from a,
  * 	sample by sample, starting from n=0.
- *	- If a (size N) is larger than b (size M), then M samples of b are added/sub'ed to/from a, 
- *	sample by sample, starting from n=0. 
- *	- If b has size 1, then this single sample is added/sub'ed to/from every sample of a. 
- *	- If both objects are of the same type, then this will also be the resulting type. 
+ *	- If a (size N) is larger than b (size M), then M samples of b are added/sub'ed to/from a,
+ *	sample by sample, starting from n=0.
+ *	- If b has size 1, then this single sample is added/sub'ed to/from every sample of a.
+ *	- If both objects are of the same type, then this will also be the resulting type.
  *	- Surfaces cannot be added/sub'ed to/from any other objects (including other Surfaces)
  *
- * Operation with different types: 
- * a Complex, b Wave: b is added/sub'ed to/from the real part of a. 
+ * Operation with different types:
+ * a Complex, b Wave: b is added/sub'ed to/from the real part of a.
  * a Complex, b Polar: b is complex added/sub'ed to/from a
  *
- * a Wave, b Complex: b is complex added/sub'ed to/from a. Resulting type is Complex. 
- * a Wave, b Polar: a is treated as the real part of a complex object, 
- * 	thus the same behaviour as "a Complex, b Polar". Resulting type is Polar. 
+ * a Wave, b Complex: b is complex added/sub'ed to/from a. Resulting type is Complex.
+ * a Wave, b Polar: a is treated as the real part of a complex object,
+ * 	thus the same behaviour as "a Complex, b Polar". Resulting type is Polar.
  *
- * a Polar, b another type: same as when a is Complex, except that a stays Polar. 
- * 	a must be internally converted to Complex, and then back to Polar. This is very slow. 
- * 	You should avoid using this constellation when possible. 
+ * a Polar, b another type: same as when a is Complex, except that a stays Polar.
+ * 	a must be internally converted to Complex, and then back to Polar. This is very slow.
+ * 	You should avoid using this constellation when possible.
  *
- * a Polar, b Polar: a and b are simplex added/sub'ed (ABS(a)+ABS(b) and ARG(a)+ARG(b)). 
+ * a Polar, b Polar: a and b are simplex added/sub'ed (ABS(a)+ABS(b) and ARG(a)+ARG(b)).
  * 	THIS IS NOT CORRECT MATH! But very helpful in lots of situations. If you want to really add two
- *	polar objects, convert a to Complex first, then after the operation back to Polar. 
+ *	polar objects, convert a to Complex first, then after the operation back to Polar.
  *
- * a Surface, b another type: 
- *	Only Wave-objects of size 1 may be added/sub'ed to/from a. 
+ * a Surface, b another type:
+ *	Only Wave-objects of size 1 may be added/sub'ed to/from a.
  *
  * EXAMPLE:
  */
@@ -745,28 +749,28 @@ int esweep_sub(esweep_object *a, const esweep_object *b);
  * Returns an error code.
  *
  * DESCRIPTION:
- * These functions operate highly dependant of the type and size of their input. The mapping must always match. 
- * operation independent of types (except SURFACE): 
- * 	- If a (size N) is smaller than b (size M), then N samples of b are multiplied/divided with/through a, 
+ * These functions operate highly dependant of the type and size of their input. The mapping must always match.
+ * operation independent of types (except SURFACE):
+ * 	- If a (size N) is smaller than b (size M), then N samples of b are multiplied/divided with/through a,
  * 	sample by sample, starting from n=0.
- *	- If a (size N) is larger than b (size M), then M samples of b are multiplied/divided with/through a, 
- *	sample by sample, starting from n=0. 
+ *	- If a (size N) is larger than b (size M), then M samples of b are multiplied/divided with/through a,
+ *	sample by sample, starting from n=0.
  *	- If b has size 1, then every sample of a multiplied/divided with/through this single sample.
- *	- If both objects are of the same type, then this will also be the resulting type. 
+ *	- If both objects are of the same type, then this will also be the resulting type.
  *	- Surfaces cannot be multiplied/divided with/through any other objects (including other Surfaces)
 
- * Operation with different types: 
- * a Complex, b Wave: the real part of a is multiplied/divided with/through b. 
+ * Operation with different types:
+ * a Complex, b Wave: the real part of a is multiplied/divided with/through b.
  * a Complex, b Polar: a is complex multiplied/divided with/through b.
  *
- * a Wave, b Complex: a is complex multiplied/divided with/through b. Resulting type is Complex. 
- * a Wave, b Polar: a is treated as the real part of a complex object, 
- * 	thus the same behaviour as "a Complex, b Polar". Resulting type is Polar. 
+ * a Wave, b Complex: a is complex multiplied/divided with/through b. Resulting type is Complex.
+ * a Wave, b Polar: a is treated as the real part of a complex object,
+ * 	thus the same behaviour as "a Complex, b Polar". Resulting type is Polar.
  *
- * a Polar, b another type: same as when a is Complex, except that a stays Polar. 
+ * a Polar, b another type: same as when a is Complex, except that a stays Polar.
  *
- * a Surface, b another type: 
- *	a may only be multiplied/divided with/through Wave-objects with size 1. 
+ * a Surface, b another type:
+ *	a may only be multiplied/divided with/through Wave-objects with size 1.
  *
  * EXAMPLE:
  */
@@ -791,7 +795,7 @@ int esweep_createFFTTable(esweep_object *table, int size);
 int esweep_convolve(esweep_object *in, esweep_object *filter, esweep_object *table);
 int esweep_deconvolve(esweep_object *in, esweep_object *filter, esweep_object *table);
 
-int esweep_delay(esweep_object *signal, esweep_object *line, int *offset); 
+int esweep_delay(esweep_object *signal, esweep_object *line, int *offset);
 
 int esweep_hilbert(esweep_object *obj, esweep_object *table);
 int esweep_analytic(esweep_object *obj, esweep_object *table);
@@ -810,21 +814,21 @@ int esweep_smooth(esweep_object *obj, Real factor);
 int esweep_window(esweep_object *obj, const char *left_win, Real left_width, const char *right_win, Real right_width);
 int esweep_restoreHermitian(esweep_object *obj);
 
-int esweep_peakDetect(esweep_object *obj, Real threshold, int *peaks, int *n); 
+int esweep_peakDetect(esweep_object *obj, Real threshold, int *peaks, int *n);
 /* filter */
-int esweep_filter(esweep_object *obj, esweep_object *filter[]); 
-int esweep_resample(esweep_object *out, esweep_object *in, esweep_object *filter[], Complex *carry);  
+int esweep_filter(esweep_object *obj, esweep_object *filter[]);
+int esweep_resample(esweep_object *out, esweep_object *in, esweep_object *filter[], Complex *carry);
 
 
-esweep_object** esweep_createFilterFromCoeff(const char *type, Real gain, Real Qp, Real Fp, Real Qz, Real Fz, int samplerate); 
-esweep_object **esweep_createFilterFromArray(Real *num, Real *denom, int size, int samplerate); 
+esweep_object** esweep_createFilterFromCoeff(const char *type, Real gain, Real Qp, Real Fp, Real Qz, Real Fz, int samplerate);
+esweep_object **esweep_createFilterFromArray(Real *num, Real *denom, int size, int samplerate);
 
-esweep_object** esweep_cloneFilter(esweep_object *src[]); 
-int esweep_appendFilter(esweep_object *dst[], esweep_object *src[]); 
-int esweep_resetFilter(esweep_object *filter[]); 
-int esweep_freeFilter(esweep_object *filter[]); 
-int esweep_saveFilter(const char *filename, esweep_object *filter[]); 
-esweep_object **esweep_loadFilter(const char *filename); 
+esweep_object** esweep_cloneFilter(esweep_object *src[]);
+int esweep_appendFilter(esweep_object *dst[], esweep_object *src[]);
+int esweep_resetFilter(esweep_object *filter[]);
+int esweep_freeFilter(esweep_object *filter[]);
+int esweep_saveFilter(const char *filename, esweep_object *filter[]);
+esweep_object **esweep_loadFilter(const char *filename);
 
 
 /* generate */
@@ -837,7 +841,7 @@ int esweep_pad(esweep_object *obj, int size);
  * TODO: merge these functions in a single function with variable arguments
  * jfab, 09.01.2011: maybe with varargs; otherwise all functions must accept the same number of arguments
  * 		     and drop unused
- * jfab, 16.03.2011: no, this can be done in the Tcl interface. In plain C, we use one function for each generator	
+ * jfab, 16.03.2011: no, this can be done in the Tcl interface. In plain C, we use one function for each generator
  */
 
 /*
@@ -854,12 +858,12 @@ int esweep_pad(esweep_object *obj, int size);
  *
  * DESCRIPTION:
  * The frequency is automatically adjusted so that always an integer multiple of one period
- * matches in obj. If obj is Complex the analytical wave is created (Real part: sine, Imaginary part: cosine). 
+ * matches in obj. If obj is Complex the analytical wave is created (Real part: sine, Imaginary part: cosine).
  */
 
 int esweep_genSine(esweep_object *obj, Real freq, Real phase, int *periods);
 int esweep_genLogsweep(esweep_object *obj, Real locut, Real hicut, const char *spec, Real *sweep_rate);
-int esweep_genDirac(esweep_object *obj, Real delay); 
+int esweep_genDirac(esweep_object *obj, Real delay);
 int esweep_genLinsweep(esweep_object *obj, Real locut, Real hicut, const char *spec, Real *sweep_rate);
 int esweep_genNoise(esweep_object *output, Real locut, Real hicut, const char *spec);
 
@@ -869,7 +873,7 @@ int esweep_genNoise(esweep_object *output, Real locut, Real hicut, const char *s
  * esweep_toAscii()
  * Write the object's data in an ASCII file
  *
- * PARAMETERS: 
+ * PARAMETERS:
  * const char *filename: name of output file
  * const esweep_object *obj: esweep object
  * const char *comment: comment placed in the file before the data, may be NULL
