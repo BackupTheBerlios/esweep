@@ -2,8 +2,8 @@
 package require Tk 8.5
 package require Ttk 8.5
 
-#load ./esweep.dll; # replace this line by something like package require ...
-load ../../../libesweeptcl.so esweep; # replace this line by something like package require ...
+load ./esweep.dll; # replace this line by something like package require ...
+#load ../../../libesweeptcl.so esweep; # replace this line by something like package require ...
 source ../TkEsweepXYPlot/TkEsweepXYPlot.tcl
 source ./impulse_config.tcl
 source ./impulse_audio.tcl
@@ -286,6 +286,8 @@ proc calcHD {} {
 		darkblue \
 		darkgreen \
 		yellow \
+    blue \
+    gray \
 	]
 
 	# get the impulse response
@@ -299,7 +301,9 @@ proc calcHD {} {
 	array set HD [::impulse::math calcHD $ir $::impulse::variables::sweep_rate \
 		[::impulse::config cget Processing,Distortions] \
 		$gate_start $gate_stop [::impulse::config cget Processing,FFT,Size] \
-		[::impulse::config cget Processing,Smoothing]]
+		[::impulse::config cget Processing,Smoothing] \
+    [::impulse::config cget Processing,Distortions,Weighting] \
+    [::impulse::config cget Processing,Distortions,Weighting]]
 
 	foreach k [lsort -increasing [array names HD]] {
 		# display
@@ -310,7 +314,13 @@ proc calcHD {} {
 
 	if {[::impulse::config cget Processing,Distortions,K1Shift] != 0} {
 		set fr [esweep::clone -src [::TkEsweepXYPlot::getTrace FR 0]]
-		esweep::expr fr + [::impulse::config cget Processing,Distortions,K1Shift]
+    # build a polar object to be added to the frequency response
+    set shift [esweep::create -type wave -samplerate [esweep::samplerate -obj $fr] -size 1]
+		esweep::expr shift + [::impulse::config cget Processing,Distortions,K1Shift]
+    puts stderr $shift
+    esweep::toPolar -obj shift
+    puts stderr $shift
+		esweep::expr fr + $shift
 		# display
 		::TkEsweepXYPlot::addTrace FR 1 {Limit} $fr
 		::TkEsweepXYPlot::configTrace FR 1 -color red
@@ -606,4 +616,4 @@ bindings .
 unlockCmdLine
 
 # install traces
-::impulse::config::trace write updateDisplay Processing,Scaling Processing,Scaling,Reference Processing,Mode
+#::impulse::config::trace write updateDisplay Processing,Scaling Processing,Scaling,Reference Processing,Mode

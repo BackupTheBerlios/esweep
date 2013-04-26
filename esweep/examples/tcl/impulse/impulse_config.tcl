@@ -80,6 +80,8 @@ namespace eval ::impulse::config {
 		Processing,Distortions,Range 80
 		# {Shift K1 by a specified amount to visualize a limit}
 		Processing,Distortions,K1Shift -40
+    # {Distortion weighting: None: no weighting; Linear: each component is weighted by n/2, Quadratic: weighted by n^2/4} 
+		Processing,Distortions,Weighting {Quadratic}
 
 		# {Internal part}
 		# {hold the typed numbers for e. g. 12dd}

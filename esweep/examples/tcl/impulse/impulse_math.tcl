@@ -78,7 +78,7 @@ namespace eval ::impulse::math {
 		return $fr
 	}
 
-	proc calcHD {ir sweep_rate distortions gate_start gate_stop fft_length smoothing} {
+	proc calcHD {ir sweep_rate distortions gate_start gate_stop fft_length smoothing weighting weighting} {
 		set samplerate [esweep::samplerate -obj $ir]
 		set result [list]
 		set gate_start [msToSamples $gate_start $samplerate]
@@ -114,6 +114,13 @@ namespace eval ::impulse::math {
 				set fr [esweep::get -obj $ir -from $start -to $stop]
 			}
 			set sc [expr {1.0/2e-5}]; # with reference to 20 uPa
+      # Weighting
+      switch $weighting {
+       Linear {set sc [expr {$sc*$k/2.0}]}
+       Quadratic {set sc [expr {$sc*($k**2)/4.0}]}
+       None -
+       default {}
+      }
 			# calculate distortion response
 			esweep::toWave -obj fr
 			esweep::expr fr * $sc
@@ -124,7 +131,8 @@ namespace eval ::impulse::math {
 			if {$smoothing > 0} {esweep::smooth -obj fr -factor $smoothing}
 
 			# Now the trick: to shift the response on the frequency scale, adjust the samplerate
-			esweep::setSamplerate -obj fr -samplerate [expr {int(0.5+$samplerate/$k)}]
+			#esweep::setSamplerate -obj fr -samplerate [expr {int(0.5+$samplerate/$k)}]
+      esweep::compress -obj fr -factor $k
 
 			lappend result $k [esweep::clone -src $fr]
 		}
