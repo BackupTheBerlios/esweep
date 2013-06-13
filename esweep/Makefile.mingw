@@ -1,26 +1,46 @@
-
-TCL=/c/TuA_Bin/Tcl
+TCL=/c/tcl
+TCLVER=8.6
 
 GCC=gcc
-CFLAGS=-Wall -I./src -I$(TCL)/include/tcl8.5 -DHAVE_UNISTD_H -D_BYTE_ORDER=_LITTLE_ENDIAN -msse -mfpmath=sse -DNDEBUG_PRINT -DUSE_TCL_STUBS -DPORTAUDIO -I./src/portaudio/include -DESWEEP_ERROR_NOEXIT -std=c99
+AR=ar
+CFLAGS=-Wall -I./src -I$(TCL)/include -DHAVE_UNISTD_H -D_BYTE_ORDER=_LITTLE_ENDIAN -msse -mfpmath=sse -DNDEBUG_PRINT -DUSE_TCL_STUBS -DPORTAUDIO -I./src/portaudio -DESWEEP_ERROR_NOEXIT -std=c99 -DESWEEP_FILE_FULL_POLAR_ASCII_OUTPUT
 # The code breaks on windows with -O2, but -O3 works...
 OPTS=-O1
-LFLAGS=-L$(TCL)/lib -L./src/portaudio/lib/.libs
-LIBS=-ltclstub85 -lportaudio-2
 
-CSRC  =  src/esweep_priv.c src/dsp.c src/esweep_base.c src/esweep_conv.c src/esweep_dsp.c src/esweep_file.c src/esweep_filter.c src/esweep_generate.c src/esweep_math.c src/esweep_mem.c src/esweep_priv.c src/fft.c src/wrapper/tcl/esweep_tcl_wrap.c src/wrapper/tcl/esweep_tcl_wrap_base.c src/wrapper/tcl/esweep_tcl_wrap_conv.c src/wrapper/tcl/esweep_tcl_wrap_disp.c src/wrapper/tcl/esweep_tcl_wrap_dsp.c src/wrapper/tcl/esweep_tcl_wrap_file.c src/wrapper/tcl/esweep_tcl_wrap_gen.c src/wrapper/tcl/esweep_tcl_wrap_math.c src/wrapper/tcl/esweep_tcl_wrap_mem.c src/wrapper/tcl/esweep_tcl_wrap_filter.c src/wrapper/tcl/esweep_tcl_wrap_audio.c src/audio_file.c src/esweep_audio.c src/audio_pa.c src/audio_openbsd.c
+LFLAGS=-L./src/portaudio/lib/.libs -L./
+LFLAGS_TCL=-L$(TCL)/lib -L./src/portaudio/lib/.libs -L./
+LIBS=-lportaudio-2
+LIBS_TCL=-ltclstub86 -lportaudio-2
+
+CSRC  =  src/esweep_priv.c src/dsp.c src/esweep_base.c src/esweep_conv.c src/esweep_dsp.c src/esweep_file.c src/esweep_filter.c src/esweep_generate.c src/esweep_math.c src/esweep_mem.c src/esweep_priv.c src/fft.c src/audio_file.c src/esweep_audio.c src/audio_pa.c src/audio_openbsd.c
+CSRC_TCL = src/wrapper/tcl/esweep_tcl_wrap.c src/wrapper/tcl/esweep_tcl_wrap_base.c src/wrapper/tcl/esweep_tcl_wrap_conv.c src/wrapper/tcl/esweep_tcl_wrap_disp.c src/wrapper/tcl/esweep_tcl_wrap_dsp.c src/wrapper/tcl/esweep_tcl_wrap_file.c src/wrapper/tcl/esweep_tcl_wrap_gen.c src/wrapper/tcl/esweep_tcl_wrap_math.c src/wrapper/tcl/esweep_tcl_wrap_mem.c src/wrapper/tcl/esweep_tcl_wrap_filter.c src/wrapper/tcl/esweep_tcl_wrap_audio.c
 
 OBJS =$(CSRC:.c=.o)
-DLL = esweep.dll
+OBJS_TCL =$(CSRC_TCL:.c=.o)
 
+DLL_TCL = libesweeptcl.dll
+DLL = libesweep.dll
+LIB = libesweep.a
+
+shared: $(DLL)
+
+static: $(LIB)
+
+tcl: $(LIB) $(DLL_TCL)
 
 $(DLL): $(OBJS)
 	$(GCC) -shared -o $@ $^ $(LFLAGS) $(LIBS)
+
+$(LIB): $(OBJS)
+	$(AR) rcs $@ $^
+
+$(DLL_TCL): $(OBJS_TCL)
+	$(GCC) -shared -o $@ $^ $(LFLAGS) $(LFLAGS_TCL) $(LIBS) $(LIBS_TCL) -lesweep
 
 %.o: %.c
 	$(GCC) $(CFLAGS) $(OPTS) -c $< -o $@
 
 clean:
-	rm -f $(OBJS) $(DLL)
+	rm -f $(OBJS) $(OBJS_TCL) $(DLL) $(LIB)
 
 .PHONY: clean
