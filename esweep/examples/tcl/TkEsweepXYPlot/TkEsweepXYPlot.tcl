@@ -120,7 +120,7 @@ proc ::TkEsweepXYPlot::init {pathName plotName {title ""}} {
 	$c configure -bg white
 	set cData($plotName,bgColor) white
 	# pack it all together
-  ::TkEsweepXYPlot::pack $plotName
+  ::TkEsweepXYPlot::show $plotName
 
 	lappend plots(Names) $plotName
 	set plots($plotName,Traces) [list]
