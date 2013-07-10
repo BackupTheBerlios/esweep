@@ -17,7 +17,7 @@ namespace eval TkEsweepXYPlot {
 		Legend,Position "bottom"
 		Legend,Align "center"
 		Legend,Symbol,Length 10
-		Legend,Border,Width 2 
+		Legend,Border,Width 2
 
 		X,Log "no"
 		Y1,Log "no"
@@ -45,7 +45,7 @@ namespace eval TkEsweepXYPlot {
 		Y2,Max 1
 		Y2,Range {}
 		Y2,Bounds {}
-		
+
 		X,Step 3
 		X,StepDash ""
 		X,MStep 10
@@ -120,7 +120,7 @@ proc ::TkEsweepXYPlot::init {pathName plotName {title ""}} {
 	$c configure -bg white
 	set cData($plotName,bgColor) white
 	# pack it all together
-	pack $c -fill both -expand yes -side left
+  ::TkEsweepXYPlot::pack $plotName
 
 	lappend plots(Names) $plotName
 	set plots($plotName,Traces) [list]
@@ -143,14 +143,25 @@ proc ::TkEsweepXYPlot::init {pathName plotName {title ""}} {
 	return $plotName
 }
 
+# helper functions so other applications can hide/show the plot with the correct packing command
+proc ::TkEsweepXYPlot::show {plotName} {
+	variable cData
+	::pack $cData($plotName,pathName) -fill both -expand yes -side left
+}
+
+proc ::TkEsweepXYPlot::hide {plotName} {
+	variable cData
+	::pack forget $cData($plotName,pathName)
+}
+
 proc ::TkEsweepXYPlot::redrawCanvas {plotName} {
-	variable cData 
+	variable cData
 	catch {after cancel $cData($plotName,refreshID)}
 	set cData($plotName,refreshID) [after 100 ::TkEsweepXYPlot::refreshCanvas $plotName]
 }
 
 proc ::TkEsweepXYPlot::refreshCanvas {plotName} {
-	variable cData 
+	variable cData
 	variable plots
 
 	set c $cData($plotName,pathName)
@@ -222,11 +233,11 @@ proc ::TkEsweepXYPlot::getTrace {plotName traceID} {
 
 	return $plots($plotName,Traces,$traceID,Obj)
 }
-	
+
 proc ::TkEsweepXYPlot::removeTrace {plotName traceID} {
 	variable plots
 	variable cData
-	
+
 	if {[info exists plots($plotName,Traces)]==0} return
 
 	if {$traceID eq {all}} {
@@ -259,7 +270,7 @@ proc ::TkEsweepXYPlot::configTrace {plotName traceID args} {
 	if {[info exists plots($plotName,Traces,$traceID,Scale)]==0} {
 		return -code error "Trace or plot does not exist!"
 	}
-	
+
 	foreach {option value} $args {
 		switch -- $option {
 			"-state" {
@@ -340,7 +351,7 @@ proc ::TkEsweepXYPlot::addMarker {plotName traceID n} {
 	if {[info exists plots($plotName,Traces,$traceID,Scale)]==0} {
 		return -code error {Trace does not exist!}
 	}
-	
+
 	lappend plots($plotName,Traces,$traceID,Markers) $n
 	if {$plots($plotName,Config,Markers) eq {on}} {
 		set plots($plotName,Config,Dirty) 1
@@ -417,7 +428,7 @@ proc ::TkEsweepXYPlot::plot {{plotName {}}} {
 			::TkEsweepXYPlot::drawLegend $plotName
 			::TkEsweepXYPlot::drawMarker $plotName
 			set plots($plotName,Config,Dirty) 0
-		} 
+		}
 	}
 }
 
@@ -436,7 +447,7 @@ proc ::TkEsweepXYPlot::drawMarker {plotName} {
 	if {![winfo exists $c]} {return false}
 	set tag "$plotName,markers"
 	# avoid whitespaces in tag
-	regsub -all {[\s:]} [string tolower $tag] _ tag 
+	regsub -all {[\s:]} [string tolower $tag] _ tag
 	catch {$c delete $tag}
 
 	set w [winfo width $c]
@@ -477,7 +488,7 @@ proc ::TkEsweepXYPlot::drawCursors {plotName} {
 	if {![winfo exists $c]} {return false}
 	set tag "$plotName,cursors"
 	# avoid whitespaces in tag
-	regsub -all {[\s:]} [string tolower $tag] _ tag 
+	regsub -all {[\s:]} [string tolower $tag] _ tag
 	catch {$c delete $tag}
 
 	set w [winfo width $c]
@@ -521,12 +532,12 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 	if {[info exists plots($plotName,Config,Margin,Left)]==0} {
 		return -code error "Plot does not exist!"
 	}
-	
+
 	set c $cData($plotName,pathName)
 	if {![winfo exists $c]} {return false}
 	set tag "$plotName,system"
 	# avoid whitespaces in tag
-	regsub -all {[\s:]} [string tolower $tag] _ tag 
+	regsub -all {[\s:]} [string tolower $tag] _ tag
 	catch {$c delete $tag}
 
 	set w [winfo width $c]
@@ -539,7 +550,7 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 	set y1 [expr {int(0.5+$h*double($plots($plotName,Config,Margin,Top))/100)}]
 	set y2 [expr {$h-int(0.5+$h*double($plots($plotName,Config,Margin,Bottom))/100)}]
 
-	# draw outer rectangle 
+	# draw outer rectangle
 	$c create rectangle $x1 $y1 $x2 $y2 -tag $tag -dash $plots($plotName,Config,BorderDash)
 
 	# position of the font for the x-scale
@@ -556,7 +567,7 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 			# minor steps
 			for {set j 1; set mx [expr {int(0.5+$x+$mStep)}]} {$j < $plots($plotName,Config,X,MStep)} {incr j} {
 				$c create line $mx $y1 $mx $y2 -tag $tag -dash $plots($plotName,Config,X,MStepDash)
-				set mx [expr {int(0.5+$mx+$mStep)}] 
+				set mx [expr {int(0.5+$mx+$mStep)}]
 			}
 			set x [expr {int(0.5+$i*$step+$x1)}]
 			$c create line $x $y1 $x $y2 -tag $tag -dash $plots($plotName,Config,X,StepDash)
@@ -567,14 +578,14 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 		# once more
 		for {set j 1; set mx [expr {int(0.5+$x+$mStep)}]} {$j < $plots($plotName,Config,X,MStep)} {incr j} {
 			$c create line $mx $y1 $mx $y2 -tag $tag -dash $plots($plotName,Config,X,MStepDash)
-			set mx [expr {int(0.5+$mx+$mStep)}] 
+			set mx [expr {int(0.5+$mx+$mStep)}]
 		}
 	} else {
 		# ignore the step variable, determine in which decade we are and draw the lines on each power of 10
 		set tickStep 10
 		set tick [expr {pow(10, ceil(log10($plots($plotName,Config,X,Min))))}]
 		set sc [expr {($x2-$x1)/log10($plots($plotName,Config,X,Max)/$plots($plotName,Config,X,Min))}]
-		set mTick [expr {$tick/10}] 
+		set mTick [expr {$tick/10}]
 		set mTickStep [expr {$tick/$plots($plotName,Config,X,MStep)}]
 		while {$tick<$plots($plotName,Config,X,Max)} {
 			for {set i 1} {$i < $plots($plotName,Config,X,MStep)} {incr i} {
@@ -584,7 +595,7 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				}
 			}
 			set x [expr {int(0.5+$x1+log10($tick/$plots($plotName,Config,X,Min))*$sc)}]
-			$c create line $x $y1 $x $y2 -tag $tag -dash $plots($plotName,Config,X,StepDash) 
+			$c create line $x $y1 $x $y2 -tag $tag -dash $plots($plotName,Config,X,StepDash)
 			$c create text $x $fontYPos -text [format $fmtStr $tick] -tag $tag
 			set mTick $tick
 			set tick [expr {$tick*$tickStep}]
@@ -610,7 +621,7 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 	$c create text $labelXPos $labelYPos -text $plots($plotName,Config,X,Label) -tag $tag
 
 	# position of the font for the y1-scale
-	set fontwidth [font measure font -displayof $c "0"] 
+	set fontwidth [font measure font -displayof $c "0"]
 	set fontXPos [expr {$x1-$fontwidth}]
 
 	if {$plots($plotName,Config,Y1,State)=="on"} {
@@ -623,7 +634,7 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				# minor steps
 				for {set j 1; set my [expr {int(0.5+$y-$mStep)}]} {$j < $plots($plotName,Config,Y1,MStep)} {incr j} {
 					$c create line $x1 $my $x2 $my -tag $tag -dash $plots($plotName,Config,Y1,MStepDash)
-					set my [expr {int(0.5+$my-$mStep)}] 
+					set my [expr {int(0.5+$my-$mStep)}]
 				}
 				set y [expr {int(0.5+$y2-$i*$step)}]
 				$c create line $x1 $y $x2 $y -tag $tag
@@ -634,14 +645,14 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 			# once more
 			for {set j 1; set my [expr {int(0.5+$y-$mStep)}]} {$j < $plots($plotName,Config,Y1,MStep)} {incr j} {
 				$c create line $x1 $my $x2 $my -tag $tag -dash $plots($plotName,Config,Y1,MStepDash)
-				set my [expr {int(0.5+$my-$mStep)}] 
+				set my [expr {int(0.5+$my-$mStep)}]
 			}
 		} else {
 			# ignore the step variable, determine in which decade we are and draw the lines on each power of 10
 			set tickStep 10
 			set tick [expr {pow(10, ceil(log10($plots($plotName,Config,Y1,Min))))}]
 			set sc [expr {($y2-$y1)/log10($plots($plotName,Config,Y1,Max)/$plots($plotName,Config,Y1,Min))}]
-			set mTick [expr {$tick/10}] 
+			set mTick [expr {$tick/10}]
 			set mTickStep [expr {$tick/$plots($plotName,Config,Y1,MStep)}]
 			while {$tick<$plots($plotName,Config,Y1,Max)} {
 				for {set i 1} {$i < $plots($plotName,Config,Y1,MStep)} {incr i} {
@@ -653,7 +664,7 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				set y [expr {int(0.5+$y2-log10($tick/$plots($plotName,Config,Y1,Min))*$sc)}]
 				$c create line $x1 $y $x2 $y -tag $tag
 				$c create text $fontXPos $y -text [format $fmtStr $tick] -anchor e -tag $tag
-				set mTick [expr {pow(10, floor(log10($plots($plotName,Config,Y1,Min))))}] 
+				set mTick [expr {pow(10, floor(log10($plots($plotName,Config,Y1,Min))))}]
 				set tick [expr {$tick*$tickStep}]
 				set mTickStep [expr {$tick/$plots($plotName,Config,Y1,MStep)}]
 			}
@@ -689,7 +700,7 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				# minor steps
 				for {set j 1; set my [expr {int(0.5+$y-$mStep)}]} {$j < $plots($plotName,Config,Y2,MStep)} {incr j} {
 					$c create line $x1 $my $x2 $my -tag $tag -dash $plots($plotName,Config,Y2,MStepDash)
-					set my [expr {int(0.5+$my-$mStep)}] 
+					set my [expr {int(0.5+$my-$mStep)}]
 				}
 				set y [expr {int(0.5+$y2-$i*$step)}]
 				$c create line $x1 $y $x2 $y -tag $tag
@@ -700,14 +711,14 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 			# minor steps
 			for {set j 1; set my [expr {int(0.5+$y-$mStep)}]} {$j < $plots($plotName,Config,Y2,MStep)} {incr j} {
 				$c create line $x1 $my $x2 $my -tag $tag -dash $plots($plotName,Config,Y2,MStepDash)
-				set my [expr {int(0.5+$my-$mStep)}] 
+				set my [expr {int(0.5+$my-$mStep)}]
 			}
 		} else {
 			# ignore the step variable, determine in which decade we are and draw the lines on each power of 10
 			set tickStep 10
 			set tick [expr {pow(10, ceil(log10($plots($plotName,Config,Y2,Min))))}]
 			set sc [expr {($y2-$y1)/log10($plots($plotName,Config,Y2,Max)/$plots($plotName,Config,Y2,Min))}]
-			set mTick [expr {$tick/10}] 
+			set mTick [expr {$tick/10}]
 			set mTickStep [expr {$tick/$plots($plotName,Config,Y1,MStep)}]
 			while {$tick<$plots($plotName,Config,Y2,Max)} {
 				for {set i 1} {$i < $plots($plotName,Config,Y2,MStep)} {incr i} {
@@ -719,7 +730,7 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				set y [expr {int(0.5+$y2-log10($tick/$plots($plotName,Config,Y2,Min))*$sc)}]
 				$c create line $x1 $y $x2 $y -tag $tag
 				$c create text $fontXPos $y -text [format $fmtStr $tick] -anchor w -tag $tag
-				set mTick [expr {pow(10, floor(log10($plots($plotName,Config,Y2,Min))))}] 
+				set mTick [expr {pow(10, floor(log10($plots($plotName,Config,Y2,Min))))}]
 				set tick [expr {$tick*$tickStep}]
 				set mTickStep [expr {$tick/$plots($plotName,Config,Y2,MStep)}]
 			}
@@ -757,7 +768,7 @@ proc ::TkEsweepXYPlot::drawMask {plotName} {
 	set c $cData($plotName,pathName)
 	set tag "$plotName,mask"
 	# avoid whitespaces in tag
-	regsub -all {[\s:]} [string tolower $tag] _ tag 
+	regsub -all {[\s:]} [string tolower $tag] _ tag
 	catch {$c delete $tag}
 	set w [winfo width $c]
 	set h [winfo height $c]
@@ -765,7 +776,7 @@ proc ::TkEsweepXYPlot::drawMask {plotName} {
 	set x1 0
 	set x2 [expr {int(0.5+$w*double($plots($plotName,Config,Margin,Left))/100)}]
 	set y1 0
-	set y2 $h 
+	set y2 $h
 	$c create rectangle $x1 $y1 $x2 $y2 -fill $cData($plotName,bgColor) -outline $cData($plotName,bgColor) -tags $tag
 
 	# top mask
@@ -779,7 +790,7 @@ proc ::TkEsweepXYPlot::drawMask {plotName} {
 	set x1 [expr {$w-int(0.5+$w*double($plots($plotName,Config,Margin,Right))/100)}]
 	set x2 $w
 	set y1 0
-	set y2 $h 
+	set y2 $h
 	$c create rectangle $x1 $y1 $x2 $y2 -fill $cData($plotName,bgColor) -outline $cData($plotName,bgColor) -tags $tag
 
 	# bottom mask
@@ -798,7 +809,7 @@ proc ::TkEsweepXYPlot::drawLegend {plotName} {
 	set c $cData($plotName,pathName)
 	set tag "$plotName,legend"
 	# avoid whitespaces in tag
-	regsub -all {[\s:]} [string tolower $tag] _ tag 
+	regsub -all {[\s:]} [string tolower $tag] _ tag
 	catch {$c delete $tag}
 
 	# do not draw a new legend if no trace exists
@@ -818,7 +829,7 @@ proc ::TkEsweepXYPlot::drawLegend {plotName} {
 		top {
 		}
 		bottom {
-			::TkEsweepXYPlot::drawLegendBottom $plotName $x1 $x2 $y1 $y2 $tag 
+			::TkEsweepXYPlot::drawLegendBottom $plotName $x1 $x2 $y1 $y2 $tag
 		}
 		left {
 		}
@@ -832,7 +843,7 @@ proc ::TkEsweepXYPlot::drawLegend {plotName} {
 proc ::TkEsweepXYPlot::drawLegendBottom {plotName x1 x2 y1 y2 tag} {
 	variable plots
 	variable cData
-	
+
 	set c $cData($plotName,pathName)
 	set fontHeight [font metrics $plots($plotName,Config,Font) -displayof $c -linespace]
 
@@ -847,7 +858,7 @@ proc ::TkEsweepXYPlot::drawLegendBottom {plotName x1 x2 y1 y2 tag} {
 	foreach traceID $plots($plotName,Traces) {
 		set color $plots($plotName,Traces,$traceID,Color)
 		set pen $plots($plotName,Traces,$traceID,Width)
-		set textWidth [font measure font -displayof $c $plots($plotName,Traces,$traceID,Name)] 
+		set textWidth [font measure font -displayof $c $plots($plotName,Traces,$traceID,Name)]
 
 		# calculate the length of the legend entry
 		# 2*$borderwidth is used because of the border on the left side of the entry
@@ -859,7 +870,7 @@ proc ::TkEsweepXYPlot::drawLegendBottom {plotName x1 x2 y1 y2 tag} {
 			set xL $x1
 			set yL [expr {$yL+$fontHeight}]
 			if {$xL > $xmax} {set xmax $xL}
-		} 
+		}
 
 		set coords {}
 		set xL [expr {$xL+$borderWidth}]
@@ -903,7 +914,7 @@ proc ::TkEsweepXYPlot::drawTitle {plotName} {
 	set c $cData($plotName,pathName)
 	set tag "$plotName,title"
 	# avoid whitespaces in tag
-	regsub -all {[\s:]} [string tolower $tag] _ tag 
+	regsub -all {[\s:]} [string tolower $tag] _ tag
 	$c delete $tag
 
 	set fontheight [font metrics $plots($plotName,Config,Font) -displayof $c -linespace]
@@ -927,7 +938,7 @@ proc ::TkEsweepXYPlot::drawTrace {plotName {name ""}} {
 		# no traces defined yet
 		return
 	}
-	
+
 	set c $cData($plotName,pathName)
 
 	if {$name==""} {
@@ -952,7 +963,7 @@ proc ::TkEsweepXYPlot::drawTrace {plotName {name ""}} {
 
 	set coordList [list]
 	foreach {traceID} $plots($plotName,Traces) {
-		if {$plots($plotName,Traces,$traceID,Dirty)==0 && $plots($plotName,Config,Dirty)==0} { 
+		if {$plots($plotName,Traces,$traceID,Dirty)==0 && $plots($plotName,Config,Dirty)==0} {
 			continue
 		} else {
 			set plots($plotName,Traces,$traceID,Dirty) 0
@@ -1012,7 +1023,7 @@ proc ::TkEsweepXYPlot::drawTrace {plotName {name ""}} {
 				set plots($plotName,Traces,$traceID,ID2) [$c create line $coordList \
 					-width $plots($plotName,Traces,$traceID,Width) \
 					-fill $plots($plotName,Traces,$traceID,Color)]
-					-dash . 
+					-dash .
 			} else {
 				$c coords $plots($plotName,Traces,$traceID,ID2) $coordList
 			}
@@ -1105,7 +1116,7 @@ proc ::TkEsweepXYPlot::autoscale {plotName {scale {all}}} {
 		if {$min eq {inf}} {
 			set min 1e9
 		} elseif {$min eq {-inf}} {set min 1e-10}
-		# should never happen, but who knows? 
+		# should never happen, but who knows?
 		if {$max < $min} {
 			set m $min
 			set min $max
@@ -1336,17 +1347,17 @@ proc ::TkEsweepXYPlot::real2screen {plotName scale border xr yr} {
 	set ymax $plots($plotName,Config,$scale,Max)
 	if {$plots($plotName,Config,X,Log)!={yes}} {
 		set xscale [expr {double($x2-$x1)/($xmax-$xmin)}]
-		set xs [expr {$xscale*($xr-$xmin)+$x1}]	
+		set xs [expr {$xscale*($xr-$xmin)+$x1}]
 	} else {
 		set xscale [expr {($x2-$x1)/log10($xmax/$xmin)}]
 		set xs [expr {$xscale*log10($xr/$xmin)+$x1}]
 	}
 	if {$plots($plotName,Config,$scale,Log)!={yes}} {
 		set yscale [expr {double($y2-$y1)/($ymax-$ymin)}]
-		set ys [expr {$yscale*($ymax-$yr)+$y1}]	
+		set ys [expr {$yscale*($ymax-$yr)+$y1}]
 	} else {
 		set yscale [expr {double($y2-$y1)/($ymax-$ymin)}]
-		set ys [expr {$yscale*($ymax-$yr)+$y1}]	
+		set ys [expr {$yscale*($ymax-$yr)+$y1}]
 	}
 
 	return [list $xs $ys]
@@ -1364,9 +1375,9 @@ if {[catch {package require Img}]==0} {
 		catch {after cancel $events(MouseHoverDelete)}
 		catch {$c delete "$plotName,hover"}
 
-		update 
+		update
 		set im [image create photo ::TkEsweepXYPlot::$plotName,img -data $c]
-		
+
 		return $im
 	}
 } else {
