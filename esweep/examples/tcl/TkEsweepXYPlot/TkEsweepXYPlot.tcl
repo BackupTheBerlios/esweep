@@ -2,10 +2,6 @@ package provide TkEsweepXYPlot 0.1
 
 # This package assumes that the esweep library is loaded into the current interpreter
 
-##########################
-# Principle of operation #
-##########################
-
 namespace eval TkEsweepXYPlot {
 	variable def_config
 	array set def_config {
@@ -84,9 +80,9 @@ namespace eval TkEsweepXYPlot {
 
 		Markers {on}
 
-		BorderDash ""
+    Font {TkDefaultFont}
 
-		Font "TkDefaultFont"
+		BorderDash ""
 
 		MouseHoverActive "yes"
 		MouseHoverDeleteDelay 1000
@@ -119,6 +115,17 @@ proc ::TkEsweepXYPlot::init {pathName plotName {title ""}} {
 	set cData($plotName,prevHeight) [winfo height $c]
 	$c configure -bg white
 	set cData($plotName,bgColor) white
+
+  # create the font for this plot
+  set plots($plotName,Config,Font,Size) 10
+  set plots($plotName,Config,Font,Weight) normal
+  set plots($plotName,Config,Font) [font create "TkEsweepXYPlot_${plotName}_Font" -family Helvetica \
+    -size $plots($plotName,Config,Font,Size) \
+    -weight $plots($plotName,Config,Font,Weight)]
+  # install traces to catch font configuration
+  trace add variable plots($plotName,Config,Font,Size) write ::TkEsweepXYPlot::configureFont
+  trace add variable plots($plotName,Config,Font,Weight) write ::TkEsweepXYPlot::configureFont
+
 	# pack it all together
   ::TkEsweepXYPlot::show $plotName
 
@@ -141,6 +148,12 @@ proc ::TkEsweepXYPlot::init {pathName plotName {title ""}} {
 
 
 	return $plotName
+}
+
+proc ::TkEsweepXYPlot::configureFont {arrayName varName op} {
+  upvar $arrayName plots
+  set plotName [lindex [split $varName ,] 0]
+  font configure $plots($plotName,Config,Font) -size $plots($plotName,Config,Font,Size) -weight $plots($plotName,Config,Font,Weight)
 }
 
 # helper functions so other applications can hide/show the plot with the correct packing command
@@ -202,6 +215,7 @@ proc ::TkEsweepXYPlot::addTrace {plotName traceID traceName obj} {
 	if {$traceName eq {}} {return -1}
 
 	lappend plots($plotName,Traces) $traceID
+	set plots($plotName,Traces) [lsort -integer -increasing $plots($plotName,Traces)]
 	# set defaults
 	# Scale: defines which part of the object is displayed (Y1=abs/real, Y2=arg/imag, BOTH: on both scales)
 	set plots($plotName,Traces,$traceID,Scale) Y1
