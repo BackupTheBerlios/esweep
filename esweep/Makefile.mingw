@@ -1,14 +1,14 @@
-TCL=/c/tcl
 TCLVER=8.6
+TCL=/c/Tcl/$(TCLVER)
 
 GCC=gcc
 AR=ar
-CFLAGS=-Wall -I./src -I$(TCL)/include -DHAVE_UNISTD_H -D_BYTE_ORDER=_LITTLE_ENDIAN -msse -mfpmath=sse -DNDEBUG_PRINT -DUSE_TCL_STUBS -DPORTAUDIO -I./src/portaudio -DESWEEP_ERROR_NOEXIT -std=c99 -DESWEEP_FILE_FULL_POLAR_ASCII_OUTPUT
+CFLAGS=-g -Wall -I./src -I$(TCL)/include -DHAVE_UNISTD_H -D_BYTE_ORDER=_LITTLE_ENDIAN -msse -mfpmath=sse -DUSE_TCL_STUBS -DPORTAUDIO -I./src/portaudio -DESWEEP_ERROR_NOEXIT -std=c99 -DESWEEP_FILE_FULL_POLAR_ASCII_OUTPUT -DUSE_TCL_STUBS -DNDEBUG_PRINT
 # The code breaks on windows with -O2, but -O3 works...
 OPTS=-O1
 
-LFLAGS=-L./src/portaudio/lib/.libs -L./
-LFLAGS_TCL=-L$(TCL)/lib -L./src/portaudio/lib/.libs -L./
+LFLAGS=-L./portaudio/lib/.libs -L./
+LFLAGS_TCL=-L$(TCL)/lib -L./portaudio/lib/.libs -L./
 LIBS=-lportaudio-2
 LIBS_TCL=-ltclstub86 -lportaudio-2
 
@@ -18,15 +18,17 @@ CSRC_TCL = src/wrapper/tcl/esweep_tcl_wrap.c src/wrapper/tcl/esweep_tcl_wrap_bas
 OBJS =$(CSRC:.c=.o)
 OBJS_TCL =$(CSRC_TCL:.c=.o)
 
-DLL_TCL = libesweeptcl.dll
-DLL = libesweep.dll
 LIB = libesweep.a
-
-shared: $(DLL)
+DLL = libesweep.dll
+TCL_LIB = libesweeptcl.a
+TCL_DLL = libesweeptcl.dll
 
 static: $(LIB)
 
-tcl: $(LIB) $(DLL_TCL)
+shared: $(DLL)
+
+tcl_static: $(TCL_LIB)
+tcl_shared: static $(TCL_DLL)
 
 $(DLL): $(OBJS)
 	$(GCC) -shared -o $@ $^ $(LFLAGS) $(LIBS)
@@ -34,7 +36,10 @@ $(DLL): $(OBJS)
 $(LIB): $(OBJS)
 	$(AR) rcs $@ $^
 
-$(DLL_TCL): $(OBJS_TCL)
+$(TCL_LIB): $(OBJS_TCL)
+	$(AR) rcs $@ $^
+
+$(TCL_DLL): $(OBJS_TCL)
 	$(GCC) -shared -o $@ $^ $(LFLAGS) $(LFLAGS_TCL) $(LIBS) $(LIBS_TCL) -lesweep
 
 %.o: %.c

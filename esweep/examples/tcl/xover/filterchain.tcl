@@ -15,7 +15,7 @@ namespace eval filterchain {
         array set channels {
 	}
 
-	variable config 
+	variable config
 	array set config {
 		Canvas {}
 		Canvas,Width 800
@@ -54,7 +54,7 @@ namespace eval filterchain {
 		bind $config(Canvas) <ButtonPress-2> [list ::filterchain::enableScanning $config(Canvas) %x %y]
 		bind $config(Canvas) <ButtonRelease-2> [list ::filterchain::disableScanning $config(Canvas)]
 
-		update 
+		update
 
 		return $config(Canvas)
 	}
@@ -66,7 +66,7 @@ namespace eval filterchain {
 	}
 
 	proc refreshCanvas {} {
-		variable config 
+		variable config
 
 		set c $config(Canvas)
 		set newWidth [winfo width $c]
@@ -265,13 +265,13 @@ namespace eval filterchain {
 		variable filters
 		variable channels
 
-		# is anything selected? 
+		# is anything selected?
 		if {[llength $config(Selected)] == 0} {
 			# return silent
 			return -code ok
 		}
-		# no groups can be grouped together, 
-		# so throw an error when the selections contains a group
+		# no groups can be grouped together,
+		# so throw an error when the selection contains a group
 		if {[lsearch $config(Selected) Group] > -1} {
 			return -code error {Groups can not be grouped together.}
 		}
@@ -297,7 +297,7 @@ namespace eval filterchain {
 		variable config
 		variable filters
 		variable channels
-		# is anything selected? 
+		# is anything selected?
 		if {[llength $config(Selected)] == 0} {
 			# return silent
 			return -code ok
@@ -320,7 +320,7 @@ namespace eval filterchain {
 		variable filters
 		variable channels
 
-		# is anything selected? 
+		# is anything selected?
 		if {[llength $config(Selected)] == 0} {
 			# return silent
 			return -code ok
@@ -358,7 +358,7 @@ namespace eval filterchain {
 		variable config
 		variable channels
 
-		# is anything selected? 
+		# is anything selected?
 		if {[llength $config(Selected)] == 0} {
 			# return silent
 			return -code ok
@@ -366,15 +366,19 @@ namespace eval filterchain {
 
 		set mod_channels [list]
 		foreach {Type ID} $config(Selected) {
-			# find the affected channel
-			foreach ch $config(Channels) {
-				if {[lsearch $channels($ch,Filters) $ID] > -1} {lappend mod_channels $ch}
-			}
 			switch $Type {
 				Filter {
+          # find the affected channel
+          foreach ch $config(Channels) {
+            if {[lsearch $channels($ch,Filters) $ID] > -1} {lappend mod_channels $ch}
+          }
 					deleteFilter $ID
 				}
 				Group {
+          # find the affected channel
+          foreach ch $config(Channels) {
+            if {[lsearch $channels($ch,Groups) $ID] > -1} {lappend mod_channels $ch}
+          }
 					deleteGroup $ID
 				}
 			}
@@ -382,7 +386,7 @@ namespace eval filterchain {
 
 		drawChain
 		# call the external edit command with the channel name
-		eval $config(EditCommand) $mod_channels $ID
+		eval [list $config(EditCommand) $mod_channels $ID]
 
 		set config(Selected) [list]
 	}
@@ -410,7 +414,7 @@ namespace eval filterchain {
 				-command [list ::filterchain::changeFilterTypeCmd \
 				$w.type $w.qp $w.fp $w.qz $w.fz] \
 				-textvariable ::filterchain::filters($ID,Type)
-		
+
 		label $w.lg -text Gain
 		ttk::entry $w.gain -textvar ::filterchain::filters($ID,Gain) \
 				-validate key \
@@ -477,12 +481,12 @@ namespace eval filterchain {
 			return 0
 		}
 
-		# is the string a number? 
+		# is the string a number?
 		if {[catch {expr {$newStr+1}}]} {
 			bell
 			return 0
 		} else {
-			# does it fulfill the constraint? 
+			# does it fulfill the constraint?
 			if {$constraint ne {}} {
 				# if the last element is a dot, remove it
 				if {[string index $newStr end] eq {.}} {set newStr [string range $newStr 0 end-1]}
@@ -602,7 +606,7 @@ namespace eval filterchain {
 		variable groups
 		variable channels
 
-		# is anything selected? 
+		# is anything selected?
 		if {[llength $config(Selected)] == 0} {
 			# return silent
 			return -code ok
@@ -716,7 +720,7 @@ namespace eval filterchain {
 			lappend filters($ID,cID) [$c create line $x1 $y2 $x2 $y1 -fill $color]
 		}
 
-		# draw line-out 
+		# draw line-out
 		# this mus be the last item, and will be ignored during selection
 		set x1 [expr {$x0+$dx}]
 		set x2 [expr {$x0+2*$dx}]
@@ -737,7 +741,7 @@ namespace eval filterchain {
 
 	proc drawLowpass {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the lowpass symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx/2.0}]
@@ -759,7 +763,7 @@ namespace eval filterchain {
 
 	proc drawHighpass {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the lowpass symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx/2.0}]
@@ -781,7 +785,7 @@ namespace eval filterchain {
 
 	proc drawBandpass {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the bandpass symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx/3.0}]
@@ -804,7 +808,7 @@ namespace eval filterchain {
 
 	proc drawBandstop {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the bandstop symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx/4.0}]
@@ -828,7 +832,7 @@ namespace eval filterchain {
 
 	proc drawAllpass {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# write "T" to indicate the group delay
 		set x1 [expr {$x0+$dx/2.0}]
 		set fontheight [font metrics $font -displayof $c -linespace]
@@ -848,7 +852,7 @@ namespace eval filterchain {
 
 	proc drawNotch {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the notch symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx/5.0}]
@@ -879,7 +883,7 @@ namespace eval filterchain {
 
 	proc drawShelve {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the notch symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx/3.0}]
@@ -907,7 +911,7 @@ namespace eval filterchain {
 
 	proc drawLinkwitz {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the notch symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx/5.0}]
@@ -939,7 +943,7 @@ namespace eval filterchain {
 
 	proc drawIntegrator {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the notch symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx}]
@@ -949,10 +953,10 @@ namespace eval filterchain {
 
 		# no text
 	}
-	
+
 	proc drawDifferentiator {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the notch symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx}]
@@ -961,11 +965,11 @@ namespace eval filterchain {
 		lappend filters($ID,cID) [$c create line $x1 $y1 $x2 $y2 -fill $color]
 
 		# no text
-	}		
+	}
 
 	proc drawGain {c ID x0 y0 dx dy font color} {
 		variable filters
-	
+
 		# draw the bandpass symbol
 		set x1 $x0
 		set x2 [expr {$x0+$dx}]
@@ -1022,7 +1026,7 @@ namespace eval filterchain {
 			lappend groups($Name,cID) [$c create line $x1 $y2 $x2 $y1 -fill $color]
 		}
 
-		# draw line-out 
+		# draw line-out
 		# this mus be the last item, and will be ignored during selection
 		set x1 [expr {$x0+$dx}]
 		set x2 [expr {$x0+2*$dx}]
@@ -1069,7 +1073,7 @@ namespace eval filterchain {
 				foreach id $filters($f,cID) {
 					catch {$c delete $id}
 				}
-				# remember group 
+				# remember group
 				if {[lsearch $groups $filters($f,Group)] < 0} {
 					lappend groups $filters($f,Group)
 					# draw it
@@ -1101,13 +1105,13 @@ namespace eval filterchain {
 		variable config
 		variable channels
 
-		# does it already exist? 
+		# does it already exist?
 		if {[info exists channels($Name,Map)]} {return -code error "Channel $Name already exists!"}
-		# is it a valid channel number? 
+		# is it a valid channel number?
 		set m $Map
 		if {[catch {incr m}]} {return -code error "Channel number $Map not an integer"}
 		if {$Map <= 0} {return -code error "Channel number $Map <= 0"}
-		# is the channel number mapped? 
+		# is the channel number mapped?
 		foreach ch $config(Channels) {
 			if {$channels($ch,Map) == $Map} {return -code error "Channel number $Map already mapped!"}
 		}
@@ -1136,7 +1140,7 @@ namespace eval filterchain {
 		}
 
 		foreach ch $names {
-			# does the channel exist? 
+			# does the channel exist?
 			if {![info exists channels($ch,Map)]} {
 				return -code error "Channel $ch does not exist!"
 			}
@@ -1171,7 +1175,7 @@ namespace eval filterchain {
 		variable channels
 		variable filters
 
-		# does the channel exist? 
+		# does the channel exist?
 		if {![info exists channels($Channel,Map)]} {return -code error "Channel $Channel does not exist!"}
 
 		# get the ID
@@ -1199,7 +1203,7 @@ namespace eval filterchain {
 		variable filters
 		variable groups
 
-		# does the filter exist? 
+		# does the filter exist?
 		if {![info exists filters($ID,Suppress)]} {return -code error "Filter with ID $ID does not exist!"}
 
 		# remove this filter from the canvas
@@ -1223,7 +1227,7 @@ namespace eval filterchain {
 			set groups($g,Filters) [lreplace $groups($g,Filters) $idx $idx]
 		}
 
-		# remove this filter from the configuration 
+		# remove this filter from the configuration
 		set idx [lsearch -exact $config(Filters) $ID]
 		set config(Filters) [lreplace $config(Filters) $idx $idx]
 
@@ -1238,12 +1242,12 @@ namespace eval filterchain {
 		variable filters
 		variable groups
 
-		# does the channel exist? 
+		# does the channel exist?
 		if {![info exists channels($Channel,Map)]} {
 			return -code error "Channel $Channel does not exist!"
 		}
 
-		# does this group already exist? 
+		# does this group already exist?
 		if {[info exists groups($Name,Suppress)]} {
 			return -code error "Group $Name already exists!"
 		}
@@ -1254,11 +1258,11 @@ namespace eval filterchain {
 
 		# first check the filters
 		foreach f $Filters {
-			# does it exist? 
+			# does it exist?
 			if {![info exists filters($f,Suppress)]} {
 				return -code error "Filter $f does not exist!"
 			}
-			# does it belong to this channel? 
+			# does it belong to this channel?
 			if {[lsearch $channels($Channel,Filters) $f] < 0} {
 				return -code error "Filter $f does not belong to channel $Channel!"
 			}
@@ -1286,7 +1290,7 @@ namespace eval filterchain {
 		variable groups
 		variable filters
 		variable channels
-		# does the group exist? 
+		# does the group exist?
 		if {![info exists groups($Name,Suppress)]} {
 			return -code error "Group $Name does not exist!"
 		}
@@ -1319,7 +1323,7 @@ namespace eval filterchain {
 		variable groups
 		variable filters
 		variable channels
-		# does the group exist? 
+		# does the group exist?
 		if {![info exists groups($Name,Suppress)]} {
 			return -code error "Group $Name does not exist!"
 		}
@@ -1353,7 +1357,7 @@ namespace eval filterchain {
 	proc getMap {channel} {
 		variable config
 		variable channels
-		# does the channel exist? 
+		# does the channel exist?
 		if {![info exists channels($channel,Map)]} {
 			return -code error "Channel $channel does not exist!"
 		}
@@ -1364,7 +1368,7 @@ namespace eval filterchain {
 		variable filters
 		variable channels
 
-		# does the channel exist? 
+		# does the channel exist?
 		if {![info exists channels($Channel,Map)]} {
 			return -code error "Channel $Channel does not exist!"
 		}
@@ -1459,7 +1463,7 @@ namespace eval filterchain {
 					$filters($f,Qz) $filters($f,Fz)
 				#setSuppress Filter $f $filters($f,Suppress)
 			}
-			
+
 		}
 
 		# add the groups

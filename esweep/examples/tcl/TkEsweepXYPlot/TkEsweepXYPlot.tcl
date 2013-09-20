@@ -181,21 +181,25 @@ proc ::TkEsweepXYPlot::refreshCanvas {plotName} {
 	set newWidth [winfo width $c]
 	set newHeight [winfo height $c]
 
-	set wscale [expr {1.0*$newWidth/$cData($plotName,prevWidth)}]
-	set hscale [expr {1.0*$newHeight/$cData($plotName,prevHeight)}]
-	set cData($plotName,prevWidth) $newWidth
-	set cData($plotName,prevHeight) $newHeight
-	# make a full redraw if the change in the window size is too big
-	if {$wscale > 2 || $wscale < 0.5 || $hscale > 2 || $hscale < 0.5} {
+  if {$newWidth == $cData($plotName,prevWidth) &&
+      $newHeight == $cData($plotName,prevHeight)} {
+    # this will only happen after the event scheduled by the scaling block below
 		set plots($plotName,Config,Dirty) 1
-		# ignore errors, because this plot may nor exist yet
+		# ignore errors, because this plot may not exist yet
 		# but the canvas does, and gets configured for a redraw
 		catch {::TkEsweepXYPlot::plot $plotName}
-	} else {
+  } else {
+    set wscale [expr {1.0*$newWidth/$cData($plotName,prevWidth)}]
+    set hscale [expr {1.0*$newHeight/$cData($plotName,prevHeight)}]
+    set cData($plotName,prevWidth) $newWidth
+    set cData($plotName,prevHeight) $newHeight
 		# scale all elements
 		$c scale all 0 0 $wscale $hscale
-		# draw the cursors
 
+    # because scaling introduces errors in the display, we schedule one redraw more
+    # this will redraw the whole plot. By this means we prevent complete redraws while changing
+    # the window size, but keep an error free display all the time
+    set cData($plotName,refreshID) [after 100 ::TkEsweepXYPlot::refreshCanvas $plotName]
 	}
 }
 
@@ -206,7 +210,7 @@ proc ::TkEsweepXYPlot::refreshCanvas {plotName} {
 proc ::TkEsweepXYPlot::addTrace {plotName traceID traceName obj} {
 	variable plots
 
-	if {[exists $plotName $traceID]} {
+	if {[info exists plots($plotName,Traces,$traceID)]} {
 		return -code error "Trace $traceID already exists on this plot!"
 	}
 	# test if it is an esweep object and if the size is greater zero
@@ -214,7 +218,22 @@ proc ::TkEsweepXYPlot::addTrace {plotName traceID traceName obj} {
 	if {$size <= 0} {return -1}
 	if {$traceName eq {}} {return -1}
 
-	lappend plots($plotName,Traces) $traceID
+  if {![regexp {^[+-]?[[:digit:]]+$} $traceID]} {
+    # test for valid integer
+    return -code error "ID $traceID not an integer"
+  }
+  if {[regexp {^[+-]} $traceID]} {
+    if {[llength $plots($plotName,Traces)] <= 0} {
+      # first trace
+      lappend plots($plotName,Traces) [set traceID 0]
+    } else {
+      # add traceID to last index
+      # note that the curly brackets are not allowed here
+      lappend plots($plotName,Traces) [set traceID [expr [lindex $plots($plotName,Traces) end] $traceID]]
+    }
+  } else {
+    lappend plots($plotName,Traces) $traceID
+  }
 	set plots($plotName,Traces) [lsort -integer -increasing $plots($plotName,Traces)]
 	# set defaults
 	# Scale: defines which part of the object is displayed (Y1=abs/real, Y2=arg/imag, BOTH: on both scales)
@@ -357,7 +376,7 @@ proc ::TkEsweepXYPlot::exists {plotName traceID} {
 	} else {return 0}
 }
 
-proc ::TkEsweepXYPlot::addMarker {plotName traceID n} {
+proc ::TkEsweepXYPlot::addMarker {plotName traceID tag n} {
 	variable plots
 	if {![info exists plots($plotName,Config,Markers)]} {
 		return -code error {Plot does not exist!}
@@ -366,14 +385,23 @@ proc ::TkEsweepXYPlot::addMarker {plotName traceID n} {
 		return -code error {Trace does not exist!}
 	}
 
-	lappend plots($plotName,Traces,$traceID,Markers) $n
+  # tags may not start with a digit and shall not contain whitespaces
+  if {[regexp {^[[:digit:]]} $tag] || [regexp {[\s]} $tag]} {
+    return -code error {Tag invalid}
+  }
+  for {set i 0} {$i < [llength $plots($plotName,Traces,$traceID,Markers)]} {incr i} {
+    if {[lsearch -integer -index 1 $plots($plotName,Traces,$traceID,Markers) $i] < 0} {break}
+  }
+  set ID [llength $plots($plotName,Traces,$traceID,Markers)]
+	lappend plots($plotName,Traces,$traceID,Markers) [list $tag $ID $n]
+
 	if {$plots($plotName,Config,Markers) eq {on}} {
 		set plots($plotName,Config,Dirty) 1
 	}
-	return [expr {[llength $plots($plotName,Traces,$traceID,Markers)]-1}]
+	return $ID
 }
 
-proc ::TkEsweepXYPlot::getMarker {plotName traceID {index {}}} {
+proc ::TkEsweepXYPlot::getMarker {plotName traceID {tagOrID {}}} {
 	variable plots
 	if {![info exists plots($plotName,Config,Markers)]} {
 		return -code error {Plot does not exist!}
@@ -381,14 +409,23 @@ proc ::TkEsweepXYPlot::getMarker {plotName traceID {index {}}} {
 	if {[info exists plots($plotName,Traces,$traceID,Scale)]==0} {
 		return -code error {Trace does not exist!}
 	}
-	if {$index eq {}} {
+	if {$tagOrID eq {}} {
 		return $plots($plotName,Traces,$traceID,Markers)
-	} else {
-		return [lindex $plots($plotName,Traces,$traceID,Markers) $index]
-	}
+	} elseif {[regexp {^[[:alpha:]]} $tagOrID]} {
+    # is a tag
+    set index 0
+    set opt {-all}
+	} elseif {![regexp {[^[:digit:]]} $tagOrID]} {
+    # is ID
+    set index 1
+    set opt {-integer}
+  } else {
+    return -code error {tagOrID neither tag nor ID}
+  }
+  return [lsearch -index $index $opt $plots($plotName,Traces,$traceID,Markers) $tagOrID]
 }
 
-proc ::TkEsweepXYPlot::modifyMarker {plotName traceID index n} {
+proc ::TkEsweepXYPlot::modifyMarker {plotName traceID ID n} {
 	variable plots
 	if {![info exists plots($plotName,Config,Markers)]} {
 		return -code error {Plot does not exist!}
@@ -397,13 +434,18 @@ proc ::TkEsweepXYPlot::modifyMarker {plotName traceID index n} {
 		return -code error {Trace does not exist!}
 	}
 
-	lset plots($plotName,Traces,$traceID,Markers) $index $n
-	if {$plots($plotName,Config,Markers) eq {on}} {
-		set plots($plotName,Config,Dirty) 1
+	if {![regexp {[^[:digit:]]} $ID]} {
+    lset plots($plotName,Traces,$traceID,Markers) $index 2 $n
+    if {$plots($plotName,Config,Markers) eq {on}} {
+      set plots($plotName,Config,Dirty) 1
+    }
+    return -code ok
+  } else {
+		return -code error {Invalid ID!}
 	}
 }
 
-proc ::TkEsweepXYPlot::deleteMarker {plotName traceID index} {
+proc ::TkEsweepXYPlot::deleteMarker {plotName traceID {tagOrID {}}} {
 	variable plots
 	if {![info exists plots($plotName,Config,Markers)]} {
 		return -code error {Plot does not exist!}
@@ -412,8 +454,26 @@ proc ::TkEsweepXYPlot::deleteMarker {plotName traceID index} {
 		return -code error {Trace does not exist!}
 	}
 
-	set plots($plotName,Traces,$traceID,Markers) [lreplace \
-		$plots($plotName,Traces,$traceID,Markers) $index $index]
+	if {$tagOrID eq {}} {
+    set plots($plotName,Traces,$traceID,Markers) {}
+    return -code ok
+	} elseif {[regexp {^[[:alpha:]]} $tagOrID]} {
+    # is a tag
+    set opt {-all}
+    set index 0
+	} elseif {![regexp {[^[:digit:]]} $tagOrID]} {
+    # is ID
+    set index 1
+    set opt {-integer}
+  } else {
+    return -code error {tagOrID neither tag nor ID}
+  }
+  set index [lsort -decreasing [lsearch -index $index $opt $plots($plotName,Traces,$traceID,Markers) $tagOrID]]
+
+  foreach i $index {
+    set plots($plotName,Traces,$traceID,Markers) [lreplace \
+      $plots($plotName,Traces,$traceID,Markers) $i $i]
+  }
 	if {$plots($plotName,Config,Markers) eq {on}} {
 		set plots($plotName,Config,Dirty) 1
 	}
@@ -476,8 +536,9 @@ proc ::TkEsweepXYPlot::drawMarker {plotName} {
 
 	foreach {traceID} $plots($plotName,Traces) {
 		if {$plots($plotName,Traces,$traceID,State) == {off}} {continue}
-		foreach {i} $plots($plotName,Traces,$traceID,Markers) {
+		foreach {m} $plots($plotName,Traces,$traceID,Markers) {
 			# get the coordinates
+      lassign $m t ID i
 			lassign [esweep::index -obj $plots($plotName,Traces,$traceID,Obj) -index $i] xr y1r y2r
 			lassign [real2screen $plotName $plots($plotName,Traces,$traceID,Scale) [list $x1 $y1 $x2 $y2] $xr $y1r] xs ys
 			if {$ys > $y2} {set ys $y2} elseif {$ys < $y1} {set ys $y1}
@@ -486,6 +547,10 @@ proc ::TkEsweepXYPlot::drawMarker {plotName} {
 				-fill $plots($plotName,Traces,$traceID,Color) \
 				-width $plots($plotName,Traces,$traceID,Width) \
 				-tag $tag
+      $c create text [expr {$xs+4}] [expr {$ys-10}] -text "${t}$ID" -anchor sw -tag $tag \
+				-fill $plots($plotName,Traces,$traceID,Color) \
+        -font $plots($plotName,Config,Font)
+
 		}
 	}
 }
@@ -525,7 +590,8 @@ proc ::TkEsweepXYPlot::drawCursors {plotName} {
 			lassign [real2screen $plotName Y1 [list $x1 $y1 $x2 $y2] $plots($plotName,Config,Cursors,1,X) 1] xs ys
 			$c create line $xs $y1 $xs $y2 -fill $plots($plotName,Config,Cursors,1,Color) -tag $tag -width $plots($plotName,Config,Cursors,1,Width)
 			set tick [format $fmtStr $plots($plotName,Config,Cursors,1,X)]
-			$c create text $xs $fontYPos -text $tick -tag $tag -anchor n
+			$c create text $xs $fontYPos -text $tick -tag $tag -anchor n \
+        -font $plots($plotName,Config,Font)
 		}
 	}
 	if {$plots($plotName,Config,Cursors,2) eq {on}} {
@@ -533,7 +599,8 @@ proc ::TkEsweepXYPlot::drawCursors {plotName} {
 			lassign [real2screen $plotName Y1 [list $x1 $y1 $x2 $y2] $plots($plotName,Config,Cursors,2,X) 1] xs ys
 			$c create line $xs $y1 $xs $y2 -fill $plots($plotName,Config,Cursors,2,Color) -tag $tag -width $plots($plotName,Config,Cursors,2,Width)
 			set tick [format $fmtStr $plots($plotName,Config,Cursors,2,X)]
-			$c create text $xs $fontYPos -text $tick -tag $tag -anchor n
+			$c create text $xs $fontYPos -text $tick -tag $tag -anchor n \
+        -font $plots($plotName,Config,Font)
 		}
 	}
 }
@@ -587,7 +654,8 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 			$c create line $x $y1 $x $y2 -tag $tag -dash $plots($plotName,Config,X,StepDash)
 			# draw scale
 			set tick [format $fmtStr [expr {$i*$tickStep+$plots($plotName,Config,X,Min)}]]
-			$c create text $x $fontYPos -text $tick -tag $tag
+			$c create text $x $fontYPos -text $tick -tag $tag \
+        -font $plots($plotName,Config,Font)
 		}
 		# once more
 		for {set j 1; set mx [expr {int(0.5+$x+$mStep)}]} {$j < $plots($plotName,Config,X,MStep)} {incr j} {
@@ -610,7 +678,8 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 			}
 			set x [expr {int(0.5+$x1+log10($tick/$plots($plotName,Config,X,Min))*$sc)}]
 			$c create line $x $y1 $x $y2 -tag $tag -dash $plots($plotName,Config,X,StepDash)
-			$c create text $x $fontYPos -text [format $fmtStr $tick] -tag $tag
+			$c create text $x $fontYPos -text [format $fmtStr $tick] -tag $tag \
+        -font $plots($plotName,Config,Font)
 			set mTick $tick
 			set tick [expr {$tick*$tickStep}]
 			set mTickStep [expr {$tick/$plots($plotName,Config,X,MStep)}]
@@ -625,14 +694,17 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 	}
 	# now the scale at the outer edges
 	set tick [format $fmtStr $plots($plotName,Config,X,Min)]
-	$c create text $x1 $fontYPos -text $tick -tag $tag
+	$c create text $x1 $fontYPos -text $tick -tag $tag \
+        -font $plots($plotName,Config,Font)
 	set tick [format $fmtStr $plots($plotName,Config,X,Max)]
-	$c create text $x2 $fontYPos -text $tick -tag $tag
+	$c create text $x2 $fontYPos -text $tick -tag $tag \
+        -font $plots($plotName,Config,Font)
 
 	# the label
 	set labelXPos [expr {$x1+($x2-$x1)/2}]
 	set labelYPos [expr {$y2+2*$fontheight}]
-	$c create text $labelXPos $labelYPos -text $plots($plotName,Config,X,Label) -tag $tag
+	$c create text $labelXPos $labelYPos -text $plots($plotName,Config,X,Label) -tag $tag \
+        -font $plots($plotName,Config,Font)
 
 	# position of the font for the y1-scale
 	set fontwidth [font measure font -displayof $c "0"]
@@ -654,7 +726,8 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				$c create line $x1 $y $x2 $y -tag $tag
 				# draw scale
 				set tick [format $fmtStr [expr {$i*$tickStep+$plots($plotName,Config,Y1,Min)}]]
-				$c create text $fontXPos $y -text $tick -anchor e -tag $tag
+				$c create text $fontXPos $y -text $tick -anchor e -tag $tag \
+          -font $plots($plotName,Config,Font)
 			}
 			# once more
 			for {set j 1; set my [expr {int(0.5+$y-$mStep)}]} {$j < $plots($plotName,Config,Y1,MStep)} {incr j} {
@@ -677,7 +750,8 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				}
 				set y [expr {int(0.5+$y2-log10($tick/$plots($plotName,Config,Y1,Min))*$sc)}]
 				$c create line $x1 $y $x2 $y -tag $tag
-				$c create text $fontXPos $y -text [format $fmtStr $tick] -anchor e -tag $tag
+				$c create text $fontXPos $y -text [format $fmtStr $tick] -anchor e -tag $tag \
+          -font $plots($plotName,Config,Font)
 				set mTick [expr {pow(10, floor(log10($plots($plotName,Config,Y1,Min))))}]
 				set tick [expr {$tick*$tickStep}]
 				set mTickStep [expr {$tick/$plots($plotName,Config,Y1,MStep)}]
@@ -692,15 +766,18 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 		}
 		# now the scale at the outer edges
 		set tick [format $fmtStr $plots($plotName,Config,Y1,Min)]
-		$c create text $fontXPos $y2 -text $tick -anchor e -tag $tag
+		$c create text $fontXPos $y2 -text $tick -anchor e -tag $tag \
+        -font $plots($plotName,Config,Font)
 		set tick [format $fmtStr $plots($plotName,Config,Y1,Max)]
-		$c create text $fontXPos $y1 -text $tick -anchor e -tag $tag
+		$c create text $fontXPos $y1 -text $tick -anchor e -tag $tag \
+        -font $plots($plotName,Config,Font)
 
 		# the label
 		# as a Tk Canvas cannot rotate individual elements, we position it on top of the axis
 		set labelXPos $x1
 		set labelYPos [expr {$y1-1*$fontheight}]
-		$c create text $labelXPos $labelYPos -text $plots($plotName,Config,Y1,Label) -tag $tag
+		$c create text $labelXPos $labelYPos -text $plots($plotName,Config,Y1,Label) -tag $tag \
+        -font $plots($plotName,Config,Font)
 	}
 
 	set fontXPos [expr {$x2+$fontwidth}]
@@ -720,7 +797,8 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				$c create line $x1 $y $x2 $y -tag $tag
 				# draw scale
 				set tick [format $fmtStr [expr {$i*$tickStep+$plots($plotName,Config,Y2,Min)}]]
-				$c create text $fontXPos $y -text $tick -anchor w -tag $tag
+				$c create text $fontXPos $y -text $tick -anchor w -tag $tag \
+        -font $plots($plotName,Config,Font)
 			}
 			# minor steps
 			for {set j 1; set my [expr {int(0.5+$y-$mStep)}]} {$j < $plots($plotName,Config,Y2,MStep)} {incr j} {
@@ -743,7 +821,8 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 				}
 				set y [expr {int(0.5+$y2-log10($tick/$plots($plotName,Config,Y2,Min))*$sc)}]
 				$c create line $x1 $y $x2 $y -tag $tag
-				$c create text $fontXPos $y -text [format $fmtStr $tick] -anchor w -tag $tag
+				$c create text $fontXPos $y -text [format $fmtStr $tick] -anchor w -tag $tag \
+        -font $plots($plotName,Config,Font)
 				set mTick [expr {pow(10, floor(log10($plots($plotName,Config,Y2,Min))))}]
 				set tick [expr {$tick*$tickStep}]
 				set mTickStep [expr {$tick/$plots($plotName,Config,Y2,MStep)}]
@@ -758,15 +837,18 @@ proc ::TkEsweepXYPlot::drawCoordSystem {plotName} {
 		}
 		# now the scale at the outer edges
 		set tick [format $fmtStr $plots($plotName,Config,Y2,Min)]
-		$c create text $fontXPos $y2 -text $tick -anchor w -tag $tag
+		$c create text $fontXPos $y2 -text $tick -anchor w -tag $tag \
+        -font $plots($plotName,Config,Font)
 		set tick [format $fmtStr $plots($plotName,Config,Y2,Max)]
-		$c create text $fontXPos $y1 -text $tick -anchor w -tag $tag
+		$c create text $fontXPos $y1 -text $tick -anchor w -tag $tag \
+        -font $plots($plotName,Config,Font)
 
 		# the label
 		# as a Tk Canvas cannot rotate individual elements, we position it on top of the axis
 		set labelXPos $x2
 		set labelYPos [expr {$y1-2*$fontheight}]
-		$c create text $labelXPos $labelYPos -text $plots($plotName,Config,Y2,Label) -tag $tag
+		$c create text $labelXPos $labelYPos -text $plots($plotName,Config,Y2,Label) -tag $tag \
+        -font $plots($plotName,Config,Font)
 	}
 }
 
@@ -896,7 +978,8 @@ proc ::TkEsweepXYPlot::drawLegendBottom {plotName x1 x2 y1 y2 tag} {
 
 		$c create line $coords -fill $plots($plotName,Traces,$traceID,Color) -tag $tag -width $plots($plotName,Traces,$traceID,Width)
 		set xL [expr {$xL+$borderWidth}]
-		$c create text $xL $yL -text $plots($plotName,Traces,$traceID,Name) -tag $tag -anchor nw
+		$c create text $xL $yL -text $plots($plotName,Traces,$traceID,Name) -tag $tag -anchor nw \
+        -font $plots($plotName,Config,Font)
 		set xL [expr {$xL+$textWidth}]
 		if {$xL > $xmax} {set xmax $xL}
 	}
@@ -936,7 +1019,8 @@ proc ::TkEsweepXYPlot::drawTitle {plotName} {
 	# draw the title
 	set titleXPos [expr {[winfo width $c]/2}]
 	set titleYPos [expr {$fontheight}]
-	$c create text $titleXPos $titleYPos -text $plots($plotName,Config,Title) -tag $tag
+	$c create text $titleXPos $titleYPos -text $plots($plotName,Config,Title) -tag $tag \
+        -font $plots($plotName,Config,Font)
 }
 
 # draw the named trace; if $name == "" then draw all; this is the default
@@ -1230,7 +1314,8 @@ proc ::TkEsweepXYPlot::mouseHoverReadout {plotName x y} {
 			set cx [expr {pow(10, ($x-$x1)/$xscale)*$plots($plotName,Config,X,Min)}]
 		}
 		set readout "X: [format $fmtStr $cx]"
-		$c create text $xshift $y -text $readout -anchor nw -tag $tag
+		$c create text $xshift $y -text $readout -anchor nw -tag $tag \
+        -font $plots($plotName,Config,Font)
 		set by [expr {$y+$fontHeight}]
 		set bx [expr {$xshift+[font measure $plots($plotName,Config,Font) -displayof $c $readout]}]
 	}
@@ -1244,7 +1329,8 @@ proc ::TkEsweepXYPlot::mouseHoverReadout {plotName x y} {
 			set cy1 [expr {pow(10, ($y2-$y)/$y1scale)*$plots($plotName,Config,Y1,Min)}]
 		}
 		set readout "Y1: [format $fmtStr $cy1]"
-		$c create text $xshift $by -text $readout -anchor nw -tag $tag
+		$c create text $xshift $by -text $readout -anchor nw -tag $tag \
+        -font $plots($plotName,Config,Font)
 		set by [expr {$by+$fontHeight}]
 		set bxn [expr {$xshift+[font measure $plots($plotName,Config,Font) -displayof $c $readout]}]
 		set bx [expr {$bxn > $bx ? $bxn : $bx}]
@@ -1259,7 +1345,8 @@ proc ::TkEsweepXYPlot::mouseHoverReadout {plotName x y} {
 			set cy2 [expr {pow(10, ($y2-$y)/$y2scale)*$plots($plotName,Config,Y2,Min)}]
 		}
 		set readout "Y2: [format $fmtStr $cy2]"
-		$c create text $xshift $by -text $readout -anchor nw -tag $tag
+		$c create text $xshift $by -text $readout -anchor nw -tag $tag \
+        -font $plots($plotName,Config,Font)
 		set by [expr {$by+$fontHeight}]
 		set bxn [expr {$xshift+[font measure $plots($plotName,Config,Font) -displayof $c $readout]}]
 		set bx [expr {$bxn > $bx ? $bxn : $bx}]
@@ -1316,6 +1403,19 @@ proc ::TkEsweepXYPlot::setCursor {plotName cursor x {y {}}} {
 	set plots($plotName,Config,Cursors,$cursor,X) $xr
 	drawCursors $plotName
 }
+
+proc ::TkEsweepXYPlot::setCursorByValue {plotName cursor x} {
+	variable plots
+
+	if {$plots($plotName,Config,Cursors,1) != {on} && $cursor == 1} return
+	if {$plots($plotName,Config,Cursors,2) != {on} && $cursor == 2} return
+
+  if {$x < $plots($plotName,Config,X,Min) || $x > $plots($plotName,Config,X,Max)} {return}
+
+  set plots($plotName,Config,Cursors,$cursor,X) $x
+	drawCursors $plotName
+}
+
 
 proc ::TkEsweepXYPlot::moveCursor {c plotName border cursor button x y} {
 	variable plots

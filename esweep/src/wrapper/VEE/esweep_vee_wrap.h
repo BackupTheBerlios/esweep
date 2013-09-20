@@ -29,8 +29,8 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include "esweep.h"
 #include "esweep_priv.h"
+#include "esweep.h"
 
 #ifndef __ESWEEP_VEE_WRAP_H
 #define __ESWEEP_VEE_WRAP_H

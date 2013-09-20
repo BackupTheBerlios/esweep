@@ -2,8 +2,8 @@
 package require Tk 8.5
 package require Ttk 8.5
 
-load ../../esweep.so; # replace this line by something like package require ...
-#load ../../esweep.dll
+#load ../../esweep.so; # replace this line by something like package require ...
+load ./libesweeptcl.dll esweep
 source ../TkEsweepXYPlot/TkEsweepXYPlot.tcl
 source ./filterchain.tcl
 
@@ -11,8 +11,8 @@ source ./filterchain.tcl
 # Overview #
 ############
 
-# Load impulse responses for up to three channels, and create filters to crossover them. 
-# See also the example/xover program. 
+# Load impulse responses for up to three channels, and create filters to crossover them.
+# See also the example/xover program.
 
 # This is the program configuration
 namespace eval xover {
@@ -22,10 +22,10 @@ namespace eval xover {
 		Channels,Out,Max 6
 		Channels,In 1
 		Audio,Samplerate {}
-		Audio,Device {/dev/audio}
+		Audio,Device {audio:/dev/audio}
 		Audio,Bitdepth 16
 		Processing,FFTSize 32768
-		Processing,Smoothing 6 
+		Processing,Smoothing 6
 	}
 	array set intern {
 		Intern,numBuffer {}
@@ -42,7 +42,7 @@ namespace eval xover {
 		if {[lindex [split $opt ,] 0] == {Intern}} {
 			if {[info exists intern($opt)]} {
 				set intern($opt) $val
-			} 
+			}
 		} else {
 			if {[info exists config($opt)]} {
 				set config($opt) $val
@@ -97,34 +97,54 @@ namespace eval channels {
 	# Standard filter coefficients
 	# These coefficients were taken from
 	# Tietze/Schenk, "Halbleiterschaltungstechnik", 2010
+  # format:
+  # Type {Order {frequency_factor Q} Order {....}} Type {...}
+  # Q = {-} for single order filters (important!)
 	variable coeffs
 	array set coeffs {
-		Critical {
-			1 {-} 2 {0.5} 3 {- 0.5} 4 {0.5 0.5} 5 {- 0.5 0.5} 6 {0.5 0.5 0.5} 
-			7 {- 0.5 0.5 0.5} 8 {0.5 0.5 0.5 0.5} 9 {- 0.5 0.5 0.5 0.5}
-			10 {0.5 0.5 0.5 0.5 0.5}
+		Linkwitz {
+			1 {1.000 -}
+      2 {1.000 0.50}
+      3 {1.000 -    1.000 1.00}
+      4 {1.000 0.71 1.000 0.71}
+      5 {1.000 -    1.000 0.62 1.000 1.62}
+      6 {1.000 0.52 1.000 0.71 1.000 1.93}
 		}
 		Bessel {
-			1 {-} 2 {0.58} 3 {- 0.69} 4 {0.52 0.81} 5 {- 0.56 0.92} 6 {0.51 0.61 1.02}
-			7 {- 0.53 0.66 1.13} 8 {0.51 0.56 0.71 1.23} 9 {- 0.52 0.59 0.76 1.32}
-			10 {0.5 0.54 0.62 0.81 1.42}
+			1 {1.000 -}
+      2 {1.274 0.58}
+      3 {1.323 -    1.448 0.69}
+      4 {1.430 0.52 1.603 0.81}
+      5 {1.502 -    1.556 0.56 1.755 0.92}
+      6 {1.604 0.51 1.689 0.61 1.905 1.02}
 		}
 		Butterworth {
-			1 {-} 2 {0.71} 3 {- 1.0} 4 {0.54 1.31} 5 {- 0.62 1.62} 6 {0.52 0.71 1.93}
-			7 {- 0.55 0.8 2.25} 8 {0.51 0.60 0.90 2.56} 9 {- 0.53 0.65 1.0 2.88}
-			10 {0.51 0.56 0.71 1.1 3.2}
+			1 {1.000 -}
+      2 {1.000 0.71}
+      3 {1.000 -    1.000 1.0}
+      4 {1.000 0.54 1.000 1.31}
+      5 {1.000 -    1.000 0.62 1.000 1.62}
+      6 {1.000 0.52 1.000 0.71 1.000 1.93}
 		}
 		Chebychev1dB {
-			1 {-} 2 {0.86} 3 {- 1.71} 4 {0.71 2.94} 5 {- 1.18 4.54} 
-			6 {0.68 1.81 6.51} 7 {- 1.09 2.58 8.84} 8 {0.68 1.61 3.47 11.53}
-			9 {- 1.06 2.21 4.48 14.58} 10 {0.67 1.53 2.89 5.61 17.99}
-		}
-		Chebychev3dB {
-			1 {-} 2 {0.96} 3 {- 2.02} 4 {0.78 3.56} 5 {- 1.4 5.56} 6 {0.76 2.2 8.0} 
-			7 {- 1.3 3.16 10.9} 8 {0.75 1.96 4.27 14.24} 9 {- 1.26 2.71 5.53 18.03}
-			10 {0.75 1.86 3.56 6.94 22.26}
+			1 {1.000 -}
+      2 {0.863 0.96}
+      3 {0.452 -    0.911 2.02}
+      4 {0.502 0.80 0.943 3.56}
+      5 {0.280 -    0.634 1.41 0.961 5.56}
+			6 {0.342 0.76 0.723 2.20 0.963 8.00}
 		}
 	}
+	proc coefficients {Shape Order} {
+		variable coeffs
+		if {[info exists coeffs($Shape)]} {
+			array set shape $coeffs($Shape)
+			if {[info exists shape($Order)]} {
+				return $shape($Order)
+			}
+		}
+  }
+
 
 	#####################
 	# Internal commands #
@@ -169,10 +189,10 @@ namespace eval channels {
 		::ttk::checkbutton $w.dirac -variable ${w}_dirac -command [list ::channels::toggleFileSelect $w.filebtn ${w}_dirac]
 		set ::${w}_dirac 0
 
-		label $w.lfile -text {IR file:} 
+		label $w.lfile -text {IR file:}
 		::ttk::entry $w.file -state readonly -textvar ${w}_file
 		set ::${w}_file {}
-		
+
 		::ttk::button $w.filebtn -text Browse -command [list ::channels::getIRFilename $w.file]
 
 		grid $w.lchannel  -    $w.channel  -sticky news
@@ -202,11 +222,12 @@ namespace eval channels {
 			if {[catch {set ir [esweep::load -filename $filename]} errInfo]} {
 				return -code error $errInfo
 			}
-			if {[esweep::type -obj $ir] != {wave}} {
+			if {[esweep::type -obj $ir] != {wave} && [esweep::type -obj $ir] != {complex}} {
 				return -code error {No valid impulse response!}
 			}
 			if {[::xover cget Audio,Samplerate] == {}} {
 				::xover configure Audio,Samplerate [esweep::samplerate -obj $ir]
+        set ::TkEsweepXYPlot::plots(FR,Config,X,Max) [expr {int(0.5+0.9*[::xover cget Audio,Samplerate]/2)}]
 			} else {
 				if {[::xover cget Audio,Samplerate] != [esweep::samplerate -obj $ir]} {
 					return -code error {Loaded impulse response with wrong samplerate}
@@ -238,13 +259,15 @@ namespace eval channels {
 		if {$filename != ""} {
 			$w configure -state normal
 			$w delete 0 end
-			$w insert 0 $filename 
+			$w insert 0 $filename
 			$w configure -state readonly
 		}
 	}
 
 	proc __calcFR {response} {
-		set fr [esweep::fft -obj response]
+    set fr [esweep::create -type [esweep::type -obj $response] -samplerate [esweep::samplerate -obj $response] -size [::xover cget Processing,FFTSize]]
+    esweep::copy -dst fr -src $response
+		esweep::fft -obj fr -inplace
 		esweep::toPolar -obj fr
 		if {[::xover cget Processing,Smoothing] > 0} {esweep::smooth -obj fr -factor [::xover cget Processing,Smoothing]}
 		esweep::lg -obj fr
@@ -286,7 +309,7 @@ namespace eval channels {
 
 		grab $w
 
-		bind $w <Escape> "set ${w}_name {}; set done 1" 
+		bind $w <Escape> "set ${w}_name {}; set done 1"
 		bind $w <Return> {set done 1}
 		bind $w <KP_Enter> {set done 1}
 
@@ -319,7 +342,6 @@ namespace eval channels {
 
 	proc addFilter {} {
 		variable config
-		variable coeffs
 		if {[llength [::filterchain::getChannels]] <= 0} {bell; return -code ok}
 		# create a new channel
 		# give the window a unique name
@@ -329,7 +351,7 @@ namespace eval channels {
 
 		grab $w
 
-		bind $w <Escape> "set ${w}_channel {}; set done 1" 
+		bind $w <Escape> "set ${w}_channel {}; set done 1"
 		bind $w <Return> {set done 1}
 		bind $w <KP_Enter> {set done 1}
 
@@ -390,8 +412,7 @@ namespace eval channels {
 		# all other filters are created from multiple biquads
 		# and then grouped together
 		set ids [list]
-		array set coeff $coeffs($approx)
-		foreach c $coeff($order) {
+		foreach {f c} [::filter coeffs $approx $order] {
 			if {$c eq {-}} {
 				# single order filter; this only happens when the filter is odd order
 				# Bandpass and Bandstop are not possible with odd order, so bail out
@@ -409,11 +430,11 @@ namespace eval channels {
 				}
 				lappend ids [::filterchain::addFilter \
 						$channel $t \
-						1 1 $freq 1 1]
+						1 1 [expr {$f*$freq}] 1 1]
 			} else {
 				lappend ids [::filterchain::addFilter $channel \
 						[string tolower $type] \
-						1 $c $freq 1 1]
+						1 $c [expr {$f*$freq}] 1 1]
 			}
 		}
 		# group the filters together when more than 1
@@ -426,24 +447,24 @@ namespace eval channels {
 	}
 
 	proc getFilter {channel} {
-		set filterchain [::filterchain::getFilters $channel]
+    set filterchain [::filterchain::getFilters $channel]
 		if {[llength $filterchain] > 0} {
-			set f [lindex $filterchain 0]
-			lassign $f type gain Qp Fp Qz Fz
-			set filter [::esweep::createFilterFromCoeff -type $type -gain $gain -Qp $Qp -Fp $Fp -Qz $Qz -Fz $Fz -samplerate [::xover cget Audio,Samplerate]]
+      set f [lindex $filterchain 0]
+      lassign $f type gain Qp Fp Qz Fz
+      set filter [::esweep::createFilterFromCoeff -type $type -gain $gain -Qp $Qp -Fp $Fp -Qz $Qz -Fz $Fz -samplerate [::xover cget Audio,Samplerate]]
 
-			for {set i 1} {$i < [llength $filterchain]} {incr i} {
-				set f [lindex $filterchain $i]
-				lassign $f type gain Qp Fp Qz Fz
-				set filter [::esweep::appendFilter -filter $filter \
-				 -append [::esweep::createFilterFromCoeff -type $type -gain $gain -Qp $Qp -Fp $Fp -Qz $Qz -Fz $Fz \
-				 -samplerate [::xover cget Audio,Samplerate]]]
-			 }
-			 return $filter
-		} else {
-			return {}
-		}
-	 }
+      for {set i 1} {$i < [llength $filterchain]} {incr i} {
+        set f [lindex $filterchain $i]
+        lassign $f type gain Qp Fp Qz Fz
+        set filter [::esweep::appendFilter -filter $filter \
+          -append [::esweep::createFilterFromCoeff -type $type -gain $gain -Qp $Qp -Fp $Fp -Qz $Qz -Fz $Fz \
+          -samplerate [::xover cget Audio,Samplerate]]]
+      }
+    } else {
+      set filter [::esweep::createFilterFromCoeff -type gain -gain 1.0 -samplerate [::xover cget Audio,Samplerate]]
+    }
+    return $filter
+	}
 
 	proc displayChannel {channels {f {}}} {
 		variable config
@@ -452,17 +473,18 @@ namespace eval channels {
 		# filter the IR
 		foreach ch $channels {
 			if {![info exists config($ch,IR)]} {continue}
-			set config($ch,FilteredIR) [::esweep::clone -src $config($ch,IR)]	
+			set config($ch,FilteredIR) [::esweep::clone -src $config($ch,IR)]
 			if {[llength [set filter [getFilter $ch]]] > 0} {
 				::esweep::filter -signal config($ch,FilteredIR) -filter $filter
 			}
 
 			# display the channel
 			set config($ch,FR) [__calcFR $config($ch,FilteredIR)]
-			if {[::TkEsweepXYPlot::exists FR [::filterchain::getMap $ch]]} {
-				::TkEsweepXYPlot::configTrace FR [::filterchain::getMap $ch] -trace $config($ch,FR)
+			if {[info exists config($ch,ID)]} {
+				::TkEsweepXYPlot::configTrace FR $config($ch,ID) -trace $config($ch,FR) -width 2
 			} else {
-				::TkEsweepXYPlot::addTrace FR [::filterchain::getMap $ch] $ch $config($ch,FR)
+				set config($ch,ID) [::TkEsweepXYPlot::addTrace FR +1 $ch $config($ch,FR)]
+				::TkEsweepXYPlot::configTrace FR $config($ch,ID) -width 2
 			}
 		}
 
@@ -489,17 +511,17 @@ namespace eval channels {
 			}
 			set sum(FR) [__calcFR $sum(IR)]
 			catch {::TkEsweepXYPlot::removeTrace FR $sum(ID)}
-			set sum(ID) [::TkEsweepXYPlot::addTrace FR [clock microseconds] {Sum} $sum(FR)]
-			::TkEsweepXYPlot::configTrace FR $sum(ID) -color darkgreen
+			set sum(ID) [::TkEsweepXYPlot::addTrace FR +1 {Sum} $sum(FR)]
+			::TkEsweepXYPlot::configTrace FR $sum(ID) -color darkgreen -width 2
 		}
 		::TkEsweepXYPlot::plot FR
 	}
 
 	namespace ensemble create -subcommands [list create load cget configure getMappings]
-	namespace ensemble create -command ::filter -map [dict create add addFilter get getFilter]
+	namespace ensemble create -command ::filter -map [dict create add addFilter get getFilter coeffs coefficients]
 }
 
-# Key bindings 
+# Key bindings
 proc bindings {win} {
 	bind $win <c> [list ::channels create]
 	bind $win <l> [list ::channels load]
@@ -562,7 +584,7 @@ proc enterCommandLine {} {
 proc exitCmdLine {{delay 0}} {
 	after $delay .cmdLine configure -state disabled -bg white -fg black
 	grab release .cmdLine
-	focus -force . 
+	focus -force .
 	bindings .
 	update idletasks
 }
@@ -609,7 +631,7 @@ proc appWindows {} {
 	pack .dia .chain -side top -expand yes -fill both
 	pack .cmdLine -side bottom -fill x
 
-	createPlots .dia 
+	createPlots .dia
 	::filterchain::init .chain ::channels::displayChannel
 	focus .
 }
@@ -634,16 +656,17 @@ proc createPlots {fr} {
 
 	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Label) {SPL [dB]}
 	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Precision) 3
-	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Autoscale) {off}
-	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Min) -40
-	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Max) 10
+	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Autoscale) {on}
+	set ::TkEsweepXYPlot::plots(FR,Config,Y1,MStep) 5
+	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Step) 6
+	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Range) 30
 	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Bounds) [list -240 240]
 	set ::TkEsweepXYPlot::plots(FR,Config,Y1,Log) {no}
 
 	set ::TkEsweepXYPlot::plots(FR,Config,Y2,Label) {Phase [rad]}
 	set ::TkEsweepXYPlot::plots(FR,Config,Y2,Precision) 3
 	set ::TkEsweepXYPlot::plots(FR,Config,Y2,Autoscale) {off}
-	set ::TkEsweepXYPlot::plots(FR,Config,Y2,Min) -3.14 
+	set ::TkEsweepXYPlot::plots(FR,Config,Y2,Min) -3.14
 	set ::TkEsweepXYPlot::plots(FR,Config,Y2,Max) 3.14
 	set ::TkEsweepXYPlot::plots(FR,Config,Y2,Log) {no}
 
@@ -708,7 +731,7 @@ proc :e {{filename ""}} {
 			writeToCmdLine "Load cancelled" -bg yellow
 			return 0
 		}
-	}	
+	}
 	# load file
 	::filterchain::loadChain $filename
 
@@ -716,12 +739,33 @@ proc :e {{filename ""}} {
 	foreach ch [::filterchain::getChannels] {
 		channels configure $ch,Map [::filterchain::getMap $ch]
 	}
-	
+
 	writeToCmdLine "Loaded $filename" -bg green
 
 	::xover configure Intern,Unsaved 0
 	::xover configure Intern,Filename $filename
 	return 0
+}
+
+proc :export {{filename ""}} {
+  if {$filename == ""} {
+    if {[set filename [tk_getSaveFile]] == ""} {
+      writeToCmdLine "Save cancelled" -bg yellow
+      return 1
+    }
+  }
+  set fp [open $filename w]
+  set samplerate [::xover cget Audio,Samplerate]
+  puts $fp "Channel; Samplerate; b0; b1; b2; a1; a2"
+  foreach ch [::filterchain::getChannels] {
+    lassign [::filter get $ch] num denom
+    # throw away the first three elements
+    foreach {b0 b1 b2} [lrange $num 3 end] {a0 a1 a2} [lrange $denom 3 end] {
+      puts $fp "$ch; $samplerate; $b0; $b1; $b2; $a1; $a2"
+    }
+    puts $fp {}
+  }
+  close $fp
 }
 
 proc :w {{filename ""}} {
@@ -731,13 +775,13 @@ proc :w {{filename ""}} {
 				writeToCmdLine "Save cancelled" -bg yellow
 				return 1
 			}
-		}	
+		}
 	} else {
 		set filename [::xover cget Intern,Filename]
 	}
 	# save file
 	::filterchain::saveChain $filename
-	
+
 	writeToCmdLine "Saved to $filename" -bg green
 
 	::xover configure Intern,Unsaved 0
@@ -777,33 +821,38 @@ proc openAudioDevice {{out_channels {1}} {in_channels {1}}} {
 	set samplerate [::xover cget Audio,Samplerate]
 	set dev [::xover cget Audio,Device]
 	set bitdepth [::xover cget Audio,Bitdepth]
-	if {[catch {set au_hdl [esweep::audioOpen -device $dev -samplerate $samplerate]}]} {
+	if {[catch {set au_hdl [esweep::audioOpen -device $dev]}]} {
 			bell
 			writeToCmdLine {Error opening audio device. Check configuration.} -bg red
 			return -code error {Error opening audio device. Check configuration.}
 	}
+	if {[esweep::audioConfigure -handle $au_hdl -param {samplerate} -value $samplerate] < 0} {
+		bell
+		esweep::audioClose -handle $au_hdl
+		return -code error {Error configuring samplerate on audio device. Check configuration.}
+	}
 	if {[esweep::audioConfigure -handle $au_hdl -param {precision} -value $bitdepth] < 0} {
 		bell
 		esweep::audioClose -handle $au_hdl
-		return -code error {Error configuring bitdepth on audio device. Check configuration.} 
+		return -code error {Error configuring bitdepth on audio device. Check configuration.}
 	}
-	# check the number of channels; if there are not enough to use the output channel, 
+	# check the number of channels; if there are not enough to use the output channel,
 	# try to configure some more
 	if {$out_channels > [esweep::audioQuery -handle $au_hdl -param {play_channels}]} {
 		 if {[esweep::audioConfigure -handle $au_hdl -param {play_channels} -value $out_channel] < 0} {
 			bell
 			esweep::audioClose -handle $au_hdl
-			return -code error {Error configuring playback channel. Check configuration.} 
+			return -code error {Error configuring playback channel. Check configuration.}
 		}
 	}
 	if {$in_channels > [esweep::audioQuery -handle $au_hdl -param {record_channels}]} {
 		 if {[esweep::audioConfigure -handle $au_hdl -param {record_channels} -value $in_channel] < 0} {
 			bell
 			esweep::audioClose -handle $au_hdl
-			return -code error {Error configuring record channel. Check configuration.} 
+			return -code error {Error configuring record channel. Check configuration.}
 		}
 	}
-		
+
 	return $au_hdl
 }
 
@@ -833,6 +882,13 @@ proc :play {} {
 
 	set au [openAudioDevice $max_channels [::xover cget Channels,Input]]
 	set framesize [esweep::audioQuery -handle $au -param framesize]
+  if {$framesize < 4096} {
+    if {[esweep::audioConfigure -handle $au -param {framesize} -value $framesize] < 0} {
+      bell
+      esweep::audioClose -handle $au
+      return -code error {Error configuring framesize on audio device. Check configuration.}
+    }
+  }
 
 	set in [list]
 	set out [list]
@@ -846,14 +902,14 @@ proc :play {} {
 	set in_channel [lindex $in end]
 
 	# play
-	deleteBindings . 
+	deleteBindings .
 	bind . <Escape> [list ::xover configure Intern,Play 0]
 	# synchronize the in/out buffers
 	esweep::audioSync -handle $au
 	::xover configure Intern,Play 1
 	puts {Starting playback...}
 	while {[::xover cget Intern,Play]} {
-		esweep::audioIn -handle $au -signals $in 
+		esweep::audioIn -handle $au -signals $in
 		for {set i 1} {$i <= $max_channels} {incr i} {
 			esweep::copy -dst mapping($i,Signal) -src $in_channel
 			esweep::filter -signal mapping($i,Signal) -filter $mapping($i,Filter)
@@ -862,11 +918,12 @@ proc :play {} {
 			}
 		}
 		esweep::audioOut -handle $au -signals $out
-		update
+    update
+    after 10
 	}
 	puts {Stopping playback...}
 	bindings .
-	
+
 	# close the audio device
 	esweep::audioSync -handle $au
 	esweep::audioClose -handle $au
@@ -877,5 +934,5 @@ proc :play {} {
 ###########
 
 appWindows
-bindings . 
+bindings .
 #console show

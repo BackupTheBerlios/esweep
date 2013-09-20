@@ -39,18 +39,18 @@ int esweepToAscii(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *
 	int optMask[] = {1, 1, 0}; // necessary options
 	enum optIdx {objIdx, fileIdx, commIdx};
 	int obji;
-	int index; 
-	char *filename=NULL; 
-	char *comment=NULL; 
+	int index;
+	char *filename=NULL;
+	char *comment=NULL;
 
-	CHECK_NUM_ARGS(objc == 5 || objc == 7, "-obj obj -filename value ?-comment string?"); 
+	CHECK_NUM_ARGS(objc == 5 || objc == 7, "-obj obj -filename value ?-comment string?");
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
 			case objIdx:
-				CHECK_ESWEEP_OBJECT(obji+1, in); 
+				CHECK_ESWEEP_OBJECT(obji+1, in);
 				break;
 			case fileIdx:
 				if ((filename=Tcl_GetString(objv[obji+1]))==NULL) {
@@ -66,15 +66,15 @@ int esweepToAscii(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *
 					return TCL_ERROR;
 				}
 				break;
-				
+
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
 	CHECK_MISSING_OPTIONS(opts, optMask, index);
 
-	ESWEEP_TCL_ASSERT(esweep_toAscii(filename, in, comment) == ERR_OK); 
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(filename, -1)); 
-	return TCL_OK; 
+	ESWEEP_TCL_ASSERT(esweep_toAscii(filename, in, comment) == ERR_OK);
+	Tcl_SetObjResult(interp, Tcl_NewStringObj(filename, -1));
+	return TCL_OK;
 }
 
 int esweepSave(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
@@ -83,18 +83,18 @@ int esweepSave(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CON
 	int optMask[] = {1, 1, 0}; // necessary options
 	enum optIdx {objIdx, fileIdx, metaIdx};
 	int obji;
-	int index; 
-	char *filename=NULL; 
-	char *meta=NULL; 
+	int index;
+	char *filename=NULL;
+	char *meta=NULL;
 
-	CHECK_NUM_ARGS(objc == 5 || objc == 7, "-obj obj -filename value ?-meta value?"); 
+	CHECK_NUM_ARGS(objc == 5 || objc == 7, "-obj obj -filename value ?-meta value?");
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
 			case objIdx:
-				CHECK_ESWEEP_OBJECT(obji+1, in); 
+				CHECK_ESWEEP_OBJECT(obji+1, in);
 				break;
 			case fileIdx:
 				if ((filename=Tcl_GetString(objv[obji+1]))==NULL) {
@@ -111,32 +111,32 @@ int esweepSave(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CON
 				}
 				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
 	CHECK_MISSING_OPTIONS(opts, optMask, index);
 
-	ESWEEP_TCL_ASSERT(esweep_save(filename, in, meta) == ERR_OK); 
-	Tcl_SetObjResult(interp, Tcl_NewStringObj(filename, -1)); 
-	return TCL_OK; 
+	ESWEEP_TCL_ASSERT(esweep_save(filename, in, meta) == ERR_OK);
+	Tcl_SetObjResult(interp, Tcl_NewStringObj(filename, -1));
+	return TCL_OK;
 }
 
 int esweepLoad(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CONST objv[]) {
 	esweep_object *out=NULL;
-	Tcl_Obj *ret=NULL; 
-	Tcl_Obj *metaObj=NULL; 
-	Tcl_Obj *metaObjName=NULL; 
+	Tcl_Obj *ret=NULL;
+	Tcl_Obj *metaObj=NULL;
+	Tcl_Obj *metaObjName=NULL;
 	const char *opts[] = {"-filename", "-meta", NULL};
 	int optMask[] = {1, 0}; // necessary options
 	enum optIdx {fileIdx, metaIdx};
 	int obji;
-	int index; 
-	char *filename=NULL; 
-	char *meta=NULL; 
+	int index;
+	char *filename=NULL;
+	char *meta=NULL;
 
-	CHECK_NUM_ARGS(objc == 3 || objc == 5, "-filename value ?-meta varName?"); 
+	CHECK_NUM_ARGS(objc == 3 || objc == 5, "-filename value ?-meta varName?");
 	for (obji=1; obji < objc; obji+=2) {
 		if (Tcl_GetIndexFromObj(interp, objv[obji], opts, "option", 0, &index) != TCL_OK) {
-			return TCL_ERROR; 
+			return TCL_ERROR;
 		}
 		switch (index) {
 			case fileIdx:
@@ -147,36 +147,33 @@ int esweepLoad(ClientData clientdata, Tcl_Interp *interp, int objc, Tcl_Obj *CON
 				}
 				break;
 			case metaIdx:
-				metaObjName=objv[obji+1]; 
-				metaObj=Tcl_ObjGetVar2(interp, objv[obji+1], NULL, TCL_LEAVE_ERR_MSG); 
-				break; 
+				metaObjName=objv[obji+1];
+				metaObj=Tcl_ObjGetVar2(interp, objv[obji+1], NULL, TCL_LEAVE_ERR_MSG);
+				break;
 		}
-		optMask[index]=0; 
+		optMask[index]=0;
 	}
 	CHECK_MISSING_OPTIONS(opts, optMask, index);
 
 	/* create a new object, size, type and samplerate are irrelevant */
-	ESWEEP_TCL_ASSERT((out=esweep_create("wave", 1000, 0)) != NULL); 
-	ESWEEP_DEBUG_PRINT("Creating object: %p\n", out); 
+	ESWEEP_TCL_ASSERT((out=esweep_create("wave", 1000, 0)) != NULL);
+	ESWEEP_DEBUG_PRINT("Creating object: %p\n", out);
 
-	/* prepare metaObj to hold the string */
-	if (metaObj == NULL) {
-		metaObj=Tcl_NewObj();
-	} else if (Tcl_IsShared(metaObj)) {
-		metaObj=Tcl_DuplicateObj(metaObj); 
+
+	ESWEEP_TCL_ASSERT(esweep_load(out, filename, &meta) == ERR_OK);
+
+	if (metaObj != NULL) {
+		metaObj=Tcl_DuplicateObj(metaObj);
+    Tcl_SetStringObj(metaObj, meta, -1);
+    Tcl_ObjSetVar2(interp, metaObjName, NULL, metaObj, TCL_LEAVE_ERR_MSG);
 	}
+	free(meta);
 
-	ESWEEP_TCL_ASSERT(esweep_load(out, filename, &meta) == ERR_OK); 
-	
-	Tcl_SetStringObj(metaObj, meta, -1); 
-	free(meta); 
-	Tcl_ObjSetVar2(interp, metaObjName, NULL, metaObj, TCL_LEAVE_ERR_MSG); 
-	
-	ret=Tcl_NewObj(); 
-	ret->internalRep.otherValuePtr=out; 
-	ret->typePtr = (Tcl_ObjType*) &tclEsweepObjType; 
-	Tcl_InvalidateStringRep(ret);  
+	ret=Tcl_NewObj();
+	ret->internalRep.otherValuePtr=out;
+	ret->typePtr = (Tcl_ObjType*) &tclEsweepObjType;
+	Tcl_InvalidateStringRep(ret);
 	Tcl_SetObjResult(interp, ret);
-	return TCL_OK; 
+	return TCL_OK;
 }
 

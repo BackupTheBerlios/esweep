@@ -2,7 +2,7 @@
 package require Tk 8.5
 package require Ttk 8.5
 
-load ./esweep.dll; # replace this line by something like package require ...
+load ./libesweeptcl.dll esweep; # replace this line by something like package require ...
 #load ../../../libesweeptcl.so esweep; # replace this line by something like package require ...
 source ../TkEsweepXYPlot/TkEsweepXYPlot.tcl
 source ./impulse_config.tcl
@@ -19,12 +19,13 @@ namespace eval ::impulse::variables {
 	variable mic_distance
 	variable refresh
 	variable unsaved
+	variable filename {}
 }
 
-# This program measures the impulse response of a system. 
-# And nothing else. No overlays or any crap. But it's very clean code. 
+# This program measures the impulse response of a system.
+# And nothing else. No overlays or any crap. But it's very clean code.
 # It reads the same configuration as the full-featured impulse.tcl. It does
-# not save the configuration, though, to prevent changing the main programs configuration. 
+# not save the configuration, though, to prevent changing the main programs configuration.
 
 proc bindings {win} {
 	bind $win <a> [list TkEsweepXYPlot::autoscale FR]
@@ -67,13 +68,13 @@ proc outputScaling {} {
 
 	# get the configuration for the output channel
 	# if not available, use global data
-	if {[set outlevel [::impulse::config cget Output,$out_channel,Level]] == {}} { 
+	if {[set outlevel [::impulse::config cget Output,$out_channel,Level]] == {}} {
 		set outlevel [::impulse::config cget Output,Global,Level]
 	}
-	if {[set outcal [::impulse::config cget Output,$out_channel,Cal]] == {}} { 
+	if {[set outcal [::impulse::config cget Output,$out_channel,Cal]] == {}} {
 		set outcal [::impulse::config cget Output,Global,Cal]
 	}
-	if {[set outgain [::impulse::config cget Output,$out_channel,Gain]] == {}} { 
+	if {[set outgain [::impulse::config cget Output,$out_channel,Gain]] == {}} {
 		set outgain [::impulse::config cget Output,Global,Gain]
 	}
 	set outmax [::impulse::config cget Output,MaxFSLevel]
@@ -106,10 +107,10 @@ proc inputScaling {mic} {
 	if {[set ref_sense [::impulse::config cget Input,$ref_channel,Cal]] == {}} {
 		set ref_sense [::impulse::config cget Input,Global,Cal]
 	}
-	if {[set in_gain [::impulse::config cget Input,$in_channel,Gain]] == {}} { 
+	if {[set in_gain [::impulse::config cget Input,$in_channel,Gain]] == {}} {
 		set in_gain [::impulse::config cget Input,Global,Gain]
 	}
-	if {[set ref_gain [::impulse::config cget Input,$ref_channel,Gain]] == {}} { 
+	if {[set ref_gain [::impulse::config cget Input,$ref_channel,Gain]] == {}} {
 		set ref_gain [::impulse::config cget Input,Global,Gain]
 	}
 	set in_sense [expr {$in_sense*$in_gain}]
@@ -164,7 +165,7 @@ proc measure {} {
 		writeToCmdLine {Input and reference channel are identical.} -bg red
 		return
 	}
-	lassign [outputScaling] out_channel out_sense level 
+	lassign [outputScaling] out_channel out_sense level
 
 	if {[::impulse::config cget Processing,Mode] ne {Single} && [::impulse::config cget Processing,Mode] ne {Dual}} {
 		bell
@@ -239,7 +240,7 @@ proc calcIR {} {
 
 	set ::TkEsweepXYPlot::plots(IR,Config,X,Min) $gate_start
 	set ::TkEsweepXYPlot::plots(IR,Config,Cursors,2,X) [set ::TkEsweepXYPlot::plots(IR,Config,X,Max) [expr {$gate_start+[::impulse::config cget Processing,Gate]}]]
-	
+
 	if {[::TkEsweepXYPlot::exists IR 0]} {
 		::TkEsweepXYPlot::configTrace IR 0 -trace $ir
 	} else {
@@ -490,7 +491,7 @@ proc execCmdLine {} {
 	bindings .
 	after 1000 unlockCmdLine
 	if {[::impulse::config cget Debug]} {
-		return -options $errOpts $errMsg 
+		return -options $errOpts $errMsg
 	}
 }
 
@@ -541,15 +542,15 @@ proc :hide {args} {
 }
 
 proc :w {{filename ""}} {
-	if {::impulse::variables::filename == ""} {
+	if {$::impulse::variables::filename == ""} {
 		if {$filename == ""} {
-			if {[set filename [tk_getSaveFile]] == ""} {
+			if {[set fn [tk_getSaveFile]] == ""} {
 				writeToCmdLine "Save cancelled" -bg yellow
 				return 1
 			}
-		}	
+		}
 	} else {
-		set fn ::impulse::variables::filename
+		set fn $::impulse::variables::filename
 	}
 	# save file
 	esweep::save -filename $fn -obj [::TkEsweepXYPlot::getTrace IR 0]
@@ -566,6 +567,12 @@ proc :wq {{filename ""}} {
 	} else {
 		exit
 	}
+}
+
+proc :w? {} {
+	set ::impulse::variables::filename {}
+	if {[:w]} {return 1}
+	return 0
 }
 
 proc :wq! {{filename ""}} {
@@ -597,7 +604,7 @@ proc :export {what {filename ""}} {
 			writeToCmdLine "Save cancelled" -bg yellow
 			return 1
 		}
-	}	
+	}
 	set im [::TkEsweepXYPlot::toImage $what]
 	$im write $filename -format png
 	return 0

@@ -144,7 +144,7 @@ int esweep_rotate(esweep_object *obj, int samples, int dir);
  * esweep_object *src=esweep_create("complex", 44100, 1000);
  * esweep_object *dst=esweep_clone(src); // content of dst and src are now identical
  */
-esweep_object *esweep_clone(esweep_object *src);
+esweep_object *esweep_clone(const esweep_object *src);
 
 /***********************************
  * Get information about an object *

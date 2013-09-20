@@ -29,7 +29,7 @@
 #include <string.h>
 #include <sys/types.h>
 
-#include <tcl.h>
+#include "tcl.h"
 #include "esweep_tcl_wrap.h"
 
 /* Structure for command table */
@@ -76,7 +76,7 @@ static command_info mod_commands[] = {
 	{"::esweep::differentiate", esweepDifferentiate, NULL},
 
 	{"::esweep::createFilterFromCoeff", esweepCreateFilterFromCoeff, NULL},
-	/*{"::esweep::createFilterFromList", esweepCreateFilterFromList, NULL},*/
+	{"::esweep::createFilterFromList", esweepCreateFilterFromList, NULL},
 	{"::esweep::appendFilter", esweepAppendFilter, NULL},
 	{"::esweep::cloneFilter", esweepCloneFilter, NULL},
 	{"::esweep::resetFilter", esweepResetFilter, NULL},
@@ -151,7 +151,7 @@ extern "C" {
 
 DLL_EXPORT int Esweep_Init(Tcl_Interp *interp) {
 	int i;
-	if (Tcl_InitStubs(interp, TCL_VERSION, 0) == NULL) {
+	if (Tcl_InitStubs(interp, TCL_VERSION_MIN, 0) == NULL) {
 		return TCL_ERROR;
 	}
 	if (Tcl_PkgProvide(interp, "esweep", "0.5") == TCL_ERROR) {
@@ -163,6 +163,8 @@ DLL_EXPORT int Esweep_Init(Tcl_Interp *interp) {
 	for (i=0;mod_commands[i].name;i++) {
 		Tcl_CreateObjCommand(interp, mod_commands[i].name, mod_commands[i].wrapper, mod_commands[i].clientdata, NULL);
 	}
+
+  Tcl_RegisterObjType(&tclEsweepObjType);
 	return TCL_OK;
 }
 
@@ -209,7 +211,13 @@ static void UpdateStringOfEsweepObj(Tcl_Obj *esweepObjPtr) {
 	Complex *cpx;
 	//Surface *surf;
 
-	ESWEEP_DEBUG_PRINT("Creating string rep of object: %p", obj);
+	ESWEEP_DEBUG_PRINT("Creating string rep of object: %p\n", obj);
+  if (obj == NULL) {
+    esweepObjPtr->length=1;
+    esweepObjPtr->bytes=ckalloc(1);
+    esweepObjPtr->bytes[0]='\0';
+    return;
+  }
 	switch (obj->type) {
 		case WAVE:
 			/*
@@ -249,8 +257,9 @@ static void UpdateStringOfEsweepObj(Tcl_Obj *esweepObjPtr) {
 				size=STRCAT(resStr, tmpStr, strSize);
 			}
 			esweepObjPtr->length=size;
-			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length);
+			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length+1);
 			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length);
+      esweepObjPtr->bytes[esweepObjPtr->length]='\0';
 			ckfree(resStr);
 			break;
 		case COMPLEX:
@@ -292,8 +301,10 @@ static void UpdateStringOfEsweepObj(Tcl_Obj *esweepObjPtr) {
 				size=STRCAT(resStr, tmpStr, strSize);
 			}
 			esweepObjPtr->length=size;
-			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length);
+      // add one byte to safely terminate the bytes array
+			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length+1);
 			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length);
+      esweepObjPtr->bytes[esweepObjPtr->length]='\0';
 			ckfree(resStr);
 
 			break;
@@ -337,8 +348,9 @@ static void UpdateStringOfEsweepObj(Tcl_Obj *esweepObjPtr) {
 				size=STRCAT(resStr, tmpStr, strSize);
 			}
 			esweepObjPtr->length=size;
-			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length);
+			esweepObjPtr->bytes=ckalloc((unsigned) esweepObjPtr->length+1);
 			STRCPY(esweepObjPtr->bytes, resStr, esweepObjPtr->length);
+      esweepObjPtr->bytes[esweepObjPtr->length]='\0';
 			ckfree(resStr);
 
 			break;
@@ -383,8 +395,9 @@ static void UpdateStringOfEsweepAudioObj(Tcl_Obj *objPtr) {
 	char pstr[35];
 	snprintf(pstr, sizeof(pstr), "%p", eaPtr->handle);
 	objPtr->length=STRLEN(pstr, sizeof(pstr));
-	objPtr->bytes=ckalloc((unsigned) objPtr->length);
+	objPtr->bytes=ckalloc((unsigned) objPtr->length+1);
 	STRCPY(objPtr->bytes, pstr, objPtr->length);
+  objPtr->bytes[objPtr->length]='\0';
 }
 
 static void CloseEsweepAudio(Tcl_Obj *objPtr) {

@@ -29,8 +29,8 @@
 #include <sys/types.h>
 
 #include <tcl.h>
-#include "../../esweep.h"
-#include "../../esweep_priv.h"
+#include "esweep.h"
+#include "esweep_priv.h"
 
 #ifndef __ESWEEP_TCL_WRAP_H
 #define __ESWEEP_TCL_WRAP_H
@@ -43,7 +43,7 @@
  * The esweep function wrappers will not share objects by themselves. But they have to respect
  * sharing done by the Tcl interpreter itself.
  */
-#define CHECK_ESWEEP_OBJECT(idx, obj) if (objv[idx]->typePtr != &tclEsweepObjType) { \
+#define CHECK_ESWEEP_OBJECT(idx, obj) if (objv[idx]->typePtr != Tcl_GetObjType("esweep")) { \
 			Tcl_SetObjResult(interp, Tcl_ObjPrintf("Parameter %i not an esweep object", idx)); \
 			return TCL_ERROR; \
 		} else {obj=(esweep_object*) objv[idx]->internalRep.otherValuePtr;}
@@ -55,7 +55,7 @@
 #define CHECK_ESWEEP_OBJECT2(idx, tclObj, obj) \
 	tclObj=Tcl_ObjGetVar2(interp, objv[idx], NULL, TCL_LEAVE_ERR_MSG); \
 	if (tclObj == NULL) {return TCL_ERROR;} \
-	if (tclObj->typePtr != &tclEsweepObjType) { \
+	if (tclObj->typePtr != Tcl_GetObjType("esweep")) { \
 			Tcl_SetObjResult(interp, Tcl_ObjPrintf("Named variable %s not an esweep object", Tcl_GetString(objv[idx]))); \
 			return TCL_ERROR; \
 	} else {obj=(esweep_object*) tclObj->internalRep.otherValuePtr;}
@@ -101,6 +101,8 @@
  */
 //#define DUPLICATE_WHEN_SHARED(tclObj, esweepObj) if (Tcl_IsShared(tclObj)) {tclObj = Tcl_DuplicateObj(tclObj); esweepObj=(esweep_object*) tclObj->internalRep.otherValuePtr;}
 #define DUPLICATE_WHEN_SHARED(tclObj, esweepObj)
+
+#define TCL_VERSION_MIN "8.5"
 
 extern const Tcl_ObjType tclEsweepObjType;
 extern const Tcl_ObjType tclEsweepAudioType;
